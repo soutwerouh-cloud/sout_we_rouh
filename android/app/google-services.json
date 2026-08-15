@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "250882692779",
+    "project_id": "sout-we-rouh",
+    "storage_bucket": "sout-we-rouh.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:250882692779:android:368a4a753955343f4549ee",
+        "android_client_info": {
+          "package_name": "com.example.sout_we_rouh"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBs3r9-b6k26FUlHFd0XLXoN0kOJBM03HA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
