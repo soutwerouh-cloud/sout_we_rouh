@@ -16,6 +16,8 @@ dependencies:
   just_audio: ^0.9.36
   audioplayers: ^6.0.0
   image_picker: ^1.0.4
+  emoji_picker_flutter: ^3.0.0
+  record: ^5.1.0
 
 dev_dependencies:
   flutter_test:

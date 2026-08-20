@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:audioplayers/audioplayers.dart' as ap;
 import 'dart:convert';
 
 class TalentModel {
@@ -10,6 +11,7 @@ class TalentModel {
   final String bio;
   final String phone;
   final String email;
+  final String password;
   final String profileImage;
   bool isApproved;
 
@@ -19,6 +21,7 @@ class TalentModel {
     required this.bio,
     required this.phone,
     this.email = '', 
+    this.password = '',
     this.profileImage = '',
     this.isApproved = false,
   });
@@ -33,6 +36,23 @@ class MainNavigationScreen extends StatefulWidget {
 
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 4;
+  final ap.AudioPlayer _globalAudioPlayer = ap.AudioPlayer();
+  int _lastKnownUnapprovedCount = 0;
+
+  @override
+  void dispose() {
+    _globalAudioPlayer.dispose();
+    super.dispose();
+  }
+
+  // دالة صوت التنبيه العام التي تعمل في خلفية التطبيق بأكمله
+  Future<void> _playGlobalNotificationSound() async {
+    try {
+      await _globalAudioPlayer.play(ap.UrlSource('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
+    } catch (e) {
+      debugPrint("خطأ في تشغيل صوت التنبيه العام: $e");
+    }
+  }
 
   final List<Widget> _screens = const [
     SingingScreen(),
@@ -45,27 +65,47 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _screens[_currentIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: const Color(0xFF7B1FA2),
-        unselectedItemColor: Colors.grey,
-        onTap: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.mic), label: 'الغناء'),
-          BottomNavigationBarItem(icon: Icon(Icons.book), label: 'الشعر'),
-          BottomNavigationBarItem(icon: Icon(Icons.music_note), label: 'التلحين'),
-          BottomNavigationBarItem(icon: Icon(Icons.star), label: 'الفنانين'),
-          BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'الدليل'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'حسابي'),
-        ],
-      ),
+    // مراقبة الطلبات الجديدة في الخلفية طالما التطبيق مفتوح وفي أي صفحة
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance.collection('talents').snapshots(),
+      builder: (context, globalSnapshot) {
+        if (globalSnapshot.hasData) {
+          int unapprovedCount = globalSnapshot.data!.docs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return data['isApproved'] == false || data['isApproved'] == null;
+          }).length;
+
+          if (unapprovedCount > _lastKnownUnapprovedCount) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              _playGlobalNotificationSound();
+            });
+          }
+          _lastKnownUnapprovedCount = unapprovedCount;
+        }
+
+        return Scaffold(
+          body: _screens[_currentIndex],
+          bottomNavigationBar: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: const Color(0xFF7B1FA2),
+            unselectedItemColor: Colors.grey,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            items: const [
+              BottomNavigationBarItem(icon: Icon(Icons.mic), label: 'الغناء'),
+              BottomNavigationBarItem(icon: Icon(Icons.book), label: 'الشعر'),
+              BottomNavigationBarItem(icon: Icon(Icons.music_note), label: 'التلحين'),
+              BottomNavigationBarItem(icon: Icon(Icons.star), label: 'الفنانين'),
+              BottomNavigationBarItem(icon: Icon(Icons.menu_book), label: 'الدليل'),
+              BottomNavigationBarItem(icon: Icon(Icons.person), label: 'حسابي'),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -152,7 +192,7 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
           controller: _passVerifyController,
           obscureText: true,
           decoration: InputDecoration(
-            hintText: 'أدخل كلمة مرور صفحتك',
+            hintText: 'أدخل كلمة مرور صفحتك الشخصية',
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           ),
         ),
@@ -264,7 +304,6 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
     }
   }
 
-  // دالة نافذة تعديل العمل المنشور
   void _showEditWorkDialog(String workId, String currentTitle, String currentContent) {
     TextEditingController editTitleController = TextEditingController(text: currentTitle);
     TextEditingController editContentController = TextEditingController(text: currentContent);
@@ -520,7 +559,6 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
                                   Expanded(
                                     child: Text(workData['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF7B1FA2))),
                                   ),
-                                  // أزرار التعديل والحذف المحمية بالباسورد
                                   Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
@@ -643,6 +681,7 @@ Widget buildTalentListWithAllWorks(BuildContext context, String categoryKeyword,
               bio: data['description'] ?? '',
               phone: data['transactionRef'] ?? '',
               email: data['email'] ?? '',
+              password: data['password'] ?? '',
               profileImage: data['profileImage'] ?? '',
               isApproved: data['isApproved'] ?? false,
             );
@@ -775,6 +814,7 @@ class GuideScreen extends StatelessWidget {
                   bio: data['description'] ?? '',
                   phone: data['transactionRef'] ?? '',
                   email: data['email'] ?? '',
+                  password: data['password'] ?? '',
                   profileImage: data['profileImage'] ?? '',
                   isApproved: data['isApproved'] ?? false,
                 );
@@ -837,6 +877,12 @@ class _AccountScreenState extends State<AccountScreen> {
   bool _isAuthenticated = false;
   final TextEditingController _passwordController = TextEditingController();
   final String _adminPassword = "125587";
+
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   void _showSmallMessage(BuildContext context, String message, {bool isError = true}) {
     ScaffoldMessenger.of(context).showSnackBar(

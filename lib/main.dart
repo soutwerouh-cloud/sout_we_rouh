@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:audioplayers/audioplayers.dart' as ap;
 import 'subscription_screen.dart';
 import 'main_navigation_screen.dart';
 import 'chat_radio_screen.dart';
@@ -57,6 +59,8 @@ class WelcomeScreen extends StatefulWidget {
 
 class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
+  final ap.AudioPlayer _globalAudioPlayer = ap.AudioPlayer();
+  int _lastKnownUnapprovedCount = -1;
 
   @override
   void initState() {
@@ -65,11 +69,25 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
       vsync: this,
       duration: const Duration(seconds: 12),
     )..repeat();
+
+    // مراقبة الطلبات لتعمل بشكل دقيق
+    FirebaseFirestore.instance.collection('talents').snapshots().listen((snapshot) {
+      int currentCount = snapshot.docs.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return data['isApproved'] == false || data['isApproved'] == null;
+      }).length;
+
+      if (_lastKnownUnapprovedCount != -1 && currentCount > _lastKnownUnapprovedCount) {
+        _globalAudioPlayer.play(ap.UrlSource('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
+      }
+      _lastKnownUnapprovedCount = currentCount;
+    });
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _globalAudioPlayer.dispose();
     super.dispose();
   }
 
@@ -192,7 +210,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProvider
 
                 const SizedBox(height: 30),
 
-                // الشريط المتحرك بكلام مميز
                 Container(
                   width: double.infinity,
                   height: 40,

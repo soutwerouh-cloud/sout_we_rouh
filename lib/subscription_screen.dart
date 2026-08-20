@@ -17,8 +17,19 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
   final TextEditingController nameController = TextEditingController();
   final TextEditingController emailController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController(); 
   final TextEditingController bioController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    emailController.dispose();
+    passwordController.dispose();
+    bioController.dispose();
+    phoneController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,8 +56,13 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
         iconTheme: const IconThemeData(color: Colors.black87),
         elevation: 2,
       ),
+      // التعديل هنا: إضافة خاصية لضمان التجاوب مع كيبورد الموبايل وإعطاء مساحة مريحة بالأسفل
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+       padding: EdgeInsets.symmetric(
+  horizontal: MediaQuery.of(context).size.width * 0.05,
+  vertical: 16.0,
+),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -60,12 +76,14 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 children: [
                   Icon(Icons.payment, color: Color(0xFF7B1FA2)),
                   SizedBox(width: 8),
-                  Text(
-                    'رسوم الاشتراك: 150 جنيه سنوياً أو 5\$ (دولار)',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF7B1FA2),
+                  Expanded(
+                    child: Text(
+                      'رسوم الاشتراك: 150 جنيه سنوياً أو 5\$ (دولار)',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF7B1FA2),
+                      ),
                     ),
                   ),
                 ],
@@ -151,6 +169,20 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
               controller: emailController,
               decoration: InputDecoration(
                 hintText: 'example@email.com',
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                filled: true,
+                fillColor: Colors.white,
+              ),
+            ),
+            const SizedBox(height: 15),
+            // خانة كلمة المرور بوضوح تام لكل الشاشات
+            const Text('كلمة المرور الشخصية (لدخول الشات وإدارة صفحتك):', style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 5),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: InputDecoration(
+                hintText: 'أدخل كلمة مرور قوية',
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
                 filled: true,
                 fillColor: Colors.white,
@@ -246,9 +278,9 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                 onPressed: !isAccepted
                     ? null
                     : () async {
-                        if (nameController.text.isEmpty || phoneController.text.isEmpty) {
+                        if (nameController.text.isEmpty || phoneController.text.isEmpty || passwordController.text.isEmpty) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('الرجاء إدخال الاسم ورقم الهاتف المحول منه')),
+                            const SnackBar(content: Text('الرجاء إدخال الاسم، كلمة المرور، ورقم الهاتف المحول منه ❌')),
                           );
                           return;
                         }
@@ -261,6 +293,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                             'paymentMethod': selectedPayment == 'vodafone' ? 'فودافون كاش' : 'InstaPay',
                             'transactionRef': phoneController.text.trim(),
                             'email': emailController.text.trim(),
+                            'password': passwordController.text.trim(),
                             'likesCount': 0,
                             'isLiked': false,
                             'isApproved': false,
@@ -269,7 +302,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
 
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('تم إرسال طلب الاشتراك بنجاح، بانتظار مراجعة الدفع والتفعيل!')),
+                              const SnackBar(content: Text('تم إرسال طلب الاشتراك بنجاح، بانتظار مراجعة الدفع والتفعيل! ✅')),
                             );
                             Navigator.pop(context);
                           }
@@ -281,7 +314,7 @@ class _SubscriptionScreenState extends State<SubscriptionScreen> {
                           }
                         }
                       },
-                child: Text(
+                child: const Text(
                   'إرسال طلب الاشتراك للدفع والتفعيل',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
