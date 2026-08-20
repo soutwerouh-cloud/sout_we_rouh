@@ -17,20 +17,13 @@ jobs:
         distribution: 'zulu'
         java-version: '17'
 
-    - name: Unzip project
-      run: |
-        unzip -q sout_we_rouh.zip -d extracted_project
-        shopt -s dotglob
-        mv extracted_project/*/* extracted_project/ 2>/dev/null || true
-        mv extracted_project/* ./ 2>/dev/null || true
-
     - uses: subosito/flutter-action@v2
       with:
         flutter-version: '3.27.1'
         channel: 'stable'
 
     - name: Get Dependencies
-      run: flutter pub get --no-example
+      run: flutter pub get
 
     - name: Build APK
       run: flutter build apk --release
