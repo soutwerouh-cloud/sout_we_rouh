@@ -228,12 +228,12 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
           children: [
             Center(
               child: InteractiveViewer(
-                child: Image.memory(imageBytes),
+                child: Image.memory(imageBytes, fit: BoxFit.contain),
               ),
             ),
             Positioned(
               top: 10,
-              left: 10,
+              right: 10,
               child: IconButton(
                 icon: const Icon(Icons.close, color: Colors.white, size: 28),
                 onPressed: () => Navigator.pop(context),
@@ -599,7 +599,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                                                                       final textVal = msg["text"].toString();
                                                                       if (textVal.contains(',')) {
                                                                         final imageBytes = base64Decode(textVal.split(',').last);
-                                                                        return GestureDetector(
+                                                                        return InkWell(
                                                                           onTap: () => _showImageDialog(context, imageBytes),
                                                                           child: Image.memory(
                                                                             imageBytes,
@@ -1037,11 +1037,7 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
 
   void _scrollToBottom() {
     if (_privateScrollController.hasClients) {
-      _privateScrollController.animateTo(
-        0.0,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      _privateScrollController.jumpTo(0.0);
     }
   }
 
@@ -1054,12 +1050,12 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
           children: [
             Center(
               child: InteractiveViewer(
-                child: Image.memory(imageBytes),
+                child: Image.memory(imageBytes, fit: BoxFit.contain),
               ),
             ),
             Positioned(
               top: 10,
-              left: 10,
+              right: 10,
               child: IconButton(
                 icon: const Icon(Icons.close, color: Colors.white, size: 28),
                 onPressed: () => Navigator.pop(context),
@@ -1185,7 +1181,7 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
                                       final textVal = msg["text"].toString();
                                       if (textVal.contains(',')) {
                                         final imageBytes = base64Decode(textVal.split(',').last);
-                                        return GestureDetector(
+                                        return InkWell(
                                           onTap: () => _showPrivateImageDialog(context, imageBytes),
                                           child: Image.memory(
                                             imageBytes,
