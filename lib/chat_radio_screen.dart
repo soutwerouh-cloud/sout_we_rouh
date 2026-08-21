@@ -683,7 +683,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                                             child: TextField(
                                               controller: _messageController,
                                               focusNode: _textFieldFocusNode,
-                                              autofocus: true,
+                                              autofocus: false, // تم الإلغاء لمنع الشاشة البنفسجية
                                               onSubmitted: (value) {
                                                 _sendPublicMessage();
                                               },
@@ -730,7 +730,8 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                           child: GestureDetector(
                             behavior: HitTestBehavior.opaque,
                             onPanUpdate: (details) {
-                              if (!isMobile && !isMinimized) {
+                              // تم السماح بالحركة على الموبايل والتابلت والويب معاً
+                              if (!isMinimized) {
                                 setState(() {
                                   final currentPos = _windowPositions[memberName] ?? const Offset(50, 100);
                                   _windowPositions[memberName] = Offset(
@@ -1234,7 +1235,7 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
                   child: TextField(
                     controller: _controller,
                     focusNode: _privateFocusNode,
-                    autofocus: true,
+                    autofocus: false, // تم الإلغاء
                     onSubmitted: (value) {
                       if (value.trim().isNotEmpty) {
                         widget.onSend(value, false, false);
