@@ -75,7 +75,6 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     });
   }
 
-  // الدالة المصححة للتشغيل الفوري والسلس
   Future<void> _initAudio() async {
     try {
       await _player.setUrl(_playlist[_currentSongIndex]["url"]!);
@@ -217,6 +216,32 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
       final base64Image = 'data:image/jpeg;base64,${base64Encode(bytes)}';
       onImageSelected(base64Image, true);
     }
+  }
+
+  void _showImageDialog(BuildContext context, Uint8List imageBytes) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black.withOpacity(0.9),
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                child: Image.memory(imageBytes),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              left: 10,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _showMembersBottomSheet(BuildContext context) {
@@ -365,418 +390,425 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
           ],
         ),
         body: SafeArea(
-          child: Column(
-            children: [
-              Container(
-                color: Colors.purple.shade50,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                child: Row(
-                  children: [
-                    const Icon(Icons.music_note, color: Colors.purple, size: 28),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        _playlist[_currentSongIndex]["title"]!,
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.purple),
-                        overflow: TextOverflow.ellipsis,
+          child: Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            child: Column(
+              children: [
+                Container(
+                  color: Colors.purple.shade50,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.music_note, color: Colors.purple, size: 28),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _playlist[_currentSongIndex]["title"]!,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.purple),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.skip_previous, color: Colors.purple, size: 28),
-                      onPressed: _playPrevious,
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                        size: 38,
-                        color: Colors.purple.shade800,
+                      IconButton(
+                        icon: const Icon(Icons.skip_previous, color: Colors.purple, size: 28),
+                        onPressed: _playPrevious,
                       ),
-                      onPressed: () async {
-                        setState(() { _isPlaying = !_isPlaying; });
-                        if (_isPlaying) {
-                          await _player.play();
-                        } else {
-                          await _player.pause();
-                        }
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.skip_next, color: Colors.purple, size: 28),
-                      onPressed: _playNext,
-                    ),
-                  ],
+                      IconButton(
+                        icon: Icon(
+                          _isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                          size: 38,
+                          color: Colors.purple.shade800,
+                        ),
+                        onPressed: () async {
+                          setState(() { _isPlaying = !_isPlaying; });
+                          if (_isPlaying) {
+                            await _player.play();
+                          } else {
+                            await _player.pause();
+                          }
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.skip_next, color: Colors.purple, size: 28),
+                        onPressed: _playNext,
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              
-              Expanded(
-                child: Stack(
-                  children: [
-                    Row(
-                      children: [
-                        if (!isMobile)
-                          Container(
-                            width: 250,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border(left: BorderSide(color: Colors.grey.shade300)),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(12),
-                                  color: Colors.purple.shade100,
-                                  child: const Row(
-                                    children: [
-                                      Icon(Icons.people, color: Colors.purple, size: 20),
-                                      SizedBox(width: 8),
-                                      Text("قائمة الأعضاء والمواهب", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.purple, fontSize: 13)),
-                                    ],
+                
+                Expanded(
+                  child: Stack(
+                    children: [
+                      Row(
+                        children: [
+                          if (!isMobile)
+                            Container(
+                              width: 250,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border(left: BorderSide(color: Colors.grey.shade300)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(12),
+                                    color: Colors.purple.shade100,
+                                    child: const Row(
+                                      children: [
+                                        Icon(Icons.people, color: Colors.purple, size: 20),
+                                        SizedBox(width: 8),
+                                        Text("قائمة الأعضاء والمواهب", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.purple, fontSize: 13)),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                Expanded(
-                                  child: StreamBuilder<QuerySnapshot>(
-                                    stream: _firestore
-                                        .collection('talents')
-                                        .where('isApproved', isEqualTo: true)
-                                        .snapshots(),
-                                    builder: (context, snapshot) {
-                                      if (!snapshot.hasData) {
-                                        return const Center(child: CircularProgressIndicator());
-                                      }
-                                      final memberDocs = snapshot.data!.docs;
+                                  Expanded(
+                                    child: StreamBuilder<QuerySnapshot>(
+                                      stream: _firestore
+                                          .collection('talents')
+                                          .where('isApproved', isEqualTo: true)
+                                          .snapshots(),
+                                      builder: (context, snapshot) {
+                                        if (!snapshot.hasData) {
+                                          return const Center(child: CircularProgressIndicator());
+                                        }
+                                        final memberDocs = snapshot.data!.docs;
 
-                                      return ListView.builder(
-                                        itemCount: memberDocs.length,
-                                        itemBuilder: (context, index) {
-                                          final memberData = memberDocs[index].data() as Map<String, dynamic>;
-                                          final memberName = memberData["name"] ?? "مستخدم";
-                                          final talentType = memberData["talentType"] ?? "موهبة جديدة";
+                                        return ListView.builder(
+                                          itemCount: memberDocs.length,
+                                          itemBuilder: (context, index) {
+                                            final memberData = memberDocs[index].data() as Map<String, dynamic>;
+                                            final memberName = memberData["name"] ?? "مستخدم";
+                                            final talentType = memberData["talentType"] ?? "موهبة جديدة";
 
-                                          if (memberName == activeUserName) {
-                                            return const SizedBox.shrink();
-                                          }
+                                            if (memberName == activeUserName) {
+                                              return const SizedBox.shrink();
+                                            }
 
-                                          return Material(
-                                            color: Colors.transparent,
-                                            child: ListTile(
-                                              leading: CircleAvatar(
-                                                backgroundColor: Colors.purple.shade200,
-                                                child: Text(memberName.isNotEmpty ? memberName[0] : "", style: const TextStyle(color: Colors.white)),
+                                            return Material(
+                                              color: Colors.transparent,
+                                              child: ListTile(
+                                                leading: CircleAvatar(
+                                                  backgroundColor: Colors.purple.shade200,
+                                                  child: Text(memberName.isNotEmpty ? memberName[0] : "", style: const TextStyle(color: Colors.white)),
+                                                ),
+                                                title: Text(memberName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                                                subtitle: Text(talentType, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                                                trailing: const Icon(Icons.chat_bubble_outline, size: 16, color: Colors.purple),
+                                                onTap: () {
+                                                  _openPrivateChat(memberName);
+                                                },
                                               ),
-                                              title: Text(memberName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                                              subtitle: Text(talentType, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                                              trailing: const Icon(Icons.chat_bubble_outline, size: 16, color: Colors.purple),
-                                              onTap: () {
-                                                _openPrivateChat(memberName);
-                                              },
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
-                          ),
 
-                        Expanded(
-                          child: Container(
-                            color: Colors.grey.shade100,
-                            child: Column(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(6),
-                                  color: Colors.purple.shade50,
-                                  width: double.infinity,
-                                  child: const Text(
-                                    "غرفة [ الشات العام ] - للمشتركين فقط",
-                                    textAlign: TextAlign.center,
-                                    style: TextStyle(fontSize: 12, color: Colors.purple, fontWeight: FontWeight.bold),
+                          Expanded(
+                            child: Container(
+                              color: Colors.grey.shade100,
+                              child: Column(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(6),
+                                    color: Colors.purple.shade50,
+                                    width: double.infinity,
+                                    child: const Text(
+                                      "غرفة [ الشات العام ] - للمشتركين فقط",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(fontSize: 12, color: Colors.purple, fontWeight: FontWeight.bold),
+                                    ),
                                   ),
-                                ),
-                                Expanded(
-                                  child: StreamBuilder<QuerySnapshot>(
-                                    stream: _firestore.collection('messages').snapshots(),
-                                    builder: (context, snapshot) {
-                                      if (!snapshot.hasData) {
-                                        return const Center(child: CircularProgressIndicator());
-                                      }
-                                      
-                                      final docs = snapshot.data!.docs.toList();
-                                      docs.sort((a, b) {
-                                        var tA = (a.data() as Map<String, dynamic>)['timestamp'];
-                                        var tB = (b.data() as Map<String, dynamic>)['timestamp'];
-                                        if (tA == null || tB == null) return 0;
-                                        return (tB as Timestamp).compareTo(tA as Timestamp);
-                                      });
+                                  Expanded(
+                                    child: StreamBuilder<QuerySnapshot>(
+                                      stream: _firestore.collection('messages').snapshots(),
+                                      builder: (context, snapshot) {
+                                        if (!snapshot.hasData) {
+                                          return const Center(child: CircularProgressIndicator());
+                                        }
+                                        
+                                        final docs = snapshot.data!.docs.toList();
+                                        docs.sort((a, b) {
+                                          var tA = (a.data() as Map<String, dynamic>)['timestamp'];
+                                          var tB = (b.data() as Map<String, dynamic>)['timestamp'];
+                                          if (tA == null || tB == null) return 0;
+                                          return (tB as Timestamp).compareTo(tA as Timestamp);
+                                        });
 
-                                      return ListView.builder(
-                                        controller: _scrollController,
-                                        reverse: true,
-                                        padding: const EdgeInsets.all(12),
-                                        itemCount: docs.length,
-                                        itemBuilder: (context, index) {
-                                          final msg = docs[index].data() as Map<String, dynamic>;
-                                          final isMe = msg["sender"] == activeUserName;
-                                          final bool isVoice = msg["isVoice"] == true;
-                                          final String voicePath = msg["text"] ?? "";
+                                        return ListView.builder(
+                                          controller: _scrollController,
+                                          reverse: true,
+                                          padding: const EdgeInsets.all(12),
+                                          itemCount: docs.length,
+                                          itemBuilder: (context, index) {
+                                            final msg = docs[index].data() as Map<String, dynamic>;
+                                            final isMe = msg["sender"] == activeUserName;
+                                            final bool isVoice = msg["isVoice"] == true;
+                                            final String voicePath = msg["text"] ?? "";
 
-                                          return Align(
-                                            alignment: isMe ? Alignment.centerLeft : Alignment.centerRight,
-                                            child: Container(
-                                              margin: const EdgeInsets.symmetric(vertical: 4),
-                                              padding: const EdgeInsets.all(10),
-                                              constraints: BoxConstraints(maxWidth: isMobile ? screenWidth * 0.75 : 350),
-                                              decoration: BoxDecoration(
-                                                color: isMe ? Colors.purple.shade700 : Colors.white,
-                                                borderRadius: BorderRadius.circular(12),
-                                                boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
-                                              ),
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                mainAxisSize: MainAxisSize.min,
-                                                children: [
-                                                  Text(
-                                                    msg["sender"] ?? "مجهول",
-                                                    style: TextStyle(
-                                                      fontSize: 11,
-                                                      fontWeight: FontWeight.bold,
-                                                      color: isMe ? Colors.white70 : Colors.purple,
+                                            return Align(
+                                              alignment: isMe ? Alignment.centerLeft : Alignment.centerRight,
+                                              child: Container(
+                                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                                padding: const EdgeInsets.all(10),
+                                                constraints: BoxConstraints(maxWidth: isMobile ? screenWidth * 0.75 : 350),
+                                                decoration: BoxDecoration(
+                                                  color: isMe ? Colors.purple.shade700 : Colors.white,
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
+                                                ),
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Text(
+                                                      msg["sender"] ?? "مجهول",
+                                                      style: TextStyle(
+                                                        fontSize: 11,
+                                                        fontWeight: FontWeight.bold,
+                                                        color: isMe ? Colors.white70 : Colors.purple,
+                                                      ),
                                                     ),
-                                                  ),
-                                                  const SizedBox(height: 4),
-                                                  isVoice
-                                                      ? Row(
-                                                          mainAxisSize: MainAxisSize.min,
-                                                          children: [
-                                                            IconButton(
-                                                              icon: const Icon(Icons.play_arrow, color: Colors.greenAccent),
-                                                              onPressed: () async {
-                                                                if (voicePath.isNotEmpty) {
-                                                                  await _voicePlayer.play(ap.UrlSource(voicePath));
-                                                                }
-                                                              },
-                                                            ),
-                                                            const Text("تسجيل صوتي 🎤", style: TextStyle(fontSize: 13)),
-                                                          ],
-                                                        )
-                                                      : (msg["isImage"] == true
-                                                          ? ClipRRect(
-                                                              borderRadius: BorderRadius.circular(8),
-                                                              child: Builder(
-                                                                builder: (context) {
-                                                                  try {
-                                                                    final textVal = msg["text"].toString();
-                                                                    if (textVal.contains(',')) {
-                                                                      return Image.memory(
-                                                                        base64Decode(textVal.split(',').last),
-                                                                        width: 140,
-                                                                        height: 140,
-                                                                        fit: BoxFit.cover,
-                                                                        errorBuilder: (c, e, s) => const Text("صورة غير صالحة ⚠️", style: TextStyle(fontSize: 10, color: Colors.red)),
-                                                                      );
-                                                                    } else {
-                                                                      return const Text("صورة قديمة ⚠️", style: TextStyle(fontSize: 10, color: Colors.grey));
-                                                                    }
-                                                                  } catch (e) {
-                                                                    return const Text("خطأ في التحميل ❌", style: TextStyle(fontSize: 10, color: Colors.red));
+                                                    const SizedBox(height: 4),
+                                                    isVoice
+                                                        ? Row(
+                                                            mainAxisSize: MainAxisSize.min,
+                                                            children: [
+                                                              IconButton(
+                                                                icon: const Icon(Icons.play_arrow, color: Colors.greenAccent),
+                                                                onPressed: () async {
+                                                                  if (voicePath.isNotEmpty) {
+                                                                    await _voicePlayer.play(ap.UrlSource(voicePath));
                                                                   }
                                                                 },
                                                               ),
-                                                            )
-                                                          : Text(
-                                                              msg["text"] ?? "",
-                                                              style: TextStyle(
-                                                                fontSize: 15,
-                                                                color: isMe ? Colors.white : Colors.black87,
-                                                              ),
-                                                            )),
-                                                ],
+                                                              const Text("تسجيل صوتي 🎤", style: TextStyle(fontSize: 13)),
+                                                            ],
+                                                          )
+                                                        : (msg["isImage"] == true
+                                                            ? ClipRRect(
+                                                                borderRadius: BorderRadius.circular(8),
+                                                                child: Builder(
+                                                                  builder: (context) {
+                                                                    try {
+                                                                      final textVal = msg["text"].toString();
+                                                                      if (textVal.contains(',')) {
+                                                                        final imageBytes = base64Decode(textVal.split(',').last);
+                                                                        return GestureDetector(
+                                                                          onTap: () => _showImageDialog(context, imageBytes),
+                                                                          child: Image.memory(
+                                                                            imageBytes,
+                                                                            width: 140,
+                                                                            height: 140,
+                                                                            fit: BoxFit.cover,
+                                                                            errorBuilder: (c, e, s) => const Text("صورة غير صالحة ⚠️", style: TextStyle(fontSize: 10, color: Colors.red)),
+                                                                          ),
+                                                                        );
+                                                                      } else {
+                                                                        return const Text("صورة قديمة ⚠️", style: TextStyle(fontSize: 10, color: Colors.grey));
+                                                                      }
+                                                                    } catch (e) {
+                                                                      return const Text("خطأ في التحميل ❌", style: TextStyle(fontSize: 10, color: Colors.red));
+                                                                    }
+                                                                  },
+                                                                ),
+                                                              )
+                                                            : Text(
+                                                                msg["text"] ?? "",
+                                                                style: TextStyle(
+                                                                  fontSize: 15,
+                                                                  color: isMe ? Colors.white : Colors.black87,
+                                                                ),
+                                                              )),
+                                                  ],
+                                                ),
                                               ),
-                                            ),
-                                          );
-                                        },
-                                      );
-                                    },
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
                                   ),
-                                ),
 
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    border: Border(top: BorderSide(color: Colors.grey.shade300)),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      IconButton(
-                                        icon: const Icon(Icons.image, color: Colors.purple, size: 22),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        onPressed: () async {
-                                          await _pickAndSendImage((path, isImg) async {
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      border: Border(top: BorderSide(color: Colors.grey.shade300)),
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        IconButton(
+                                          icon: const Icon(Icons.image, color: Colors.purple, size: 22),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          onPressed: () async {
+                                            await _pickAndSendImage((path, isImg) async {
+                                              await _firestore.collection('messages').add({
+                                                "sender": activeUserName,
+                                                "text": path,
+                                                "isImage": isImg,
+                                                "isVoice": false,
+                                                "timestamp": FieldValue.serverTimestamp(),
+                                              });
+                                              _cleanupPublicMessages();
+                                            });
+                                          },
+                                        ),
+                                        const SizedBox(width: 8),
+                                        IconButton(
+                                          icon: Icon(Icons.mic, color: _isRecordingVoice ? Colors.red : Colors.purple, size: 22),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          onPressed: () => _toggleRecordVoice((txt, img, voice) async {
                                             await _firestore.collection('messages').add({
                                               "sender": activeUserName,
-                                              "text": path,
-                                              "isImage": isImg,
-                                              "isVoice": false,
+                                              "text": txt,
+                                              "isImage": img,
+                                              "isVoice": voice,
                                               "timestamp": FieldValue.serverTimestamp(),
                                             });
                                             _cleanupPublicMessages();
-                                          });
-                                        },
-                                      ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: Icon(Icons.mic, color: _isRecordingVoice ? Colors.red : Colors.purple, size: 22),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        onPressed: () => _toggleRecordVoice((txt, img, voice) async {
-                                          await _firestore.collection('messages').add({
-                                            "sender": activeUserName,
-                                            "text": txt,
-                                            "isImage": img,
-                                            "isVoice": voice,
-                                            "timestamp": FieldValue.serverTimestamp(),
-                                          });
-                                          _cleanupPublicMessages();
-                                        }),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: SizedBox(
-                                          height: 38,
-                                          child: TextField(
-                                            controller: _messageController,
-                                            focusNode: _textFieldFocusNode,
-                                            autofocus: true,
-                                            onSubmitted: (value) {
-                                              _sendPublicMessage();
-                                            },
-                                            decoration: InputDecoration(
-                                              hintText: _isRecordingVoice ? "جاري التسجيل..." : "اكتب رسالة في الشات العام...",
-                                              hintStyle: const TextStyle(fontSize: 12),
-                                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
-                                              filled: true,
-                                              fillColor: Colors.grey.shade100,
-                                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+                                          }),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Expanded(
+                                          child: SizedBox(
+                                            height: 38,
+                                            child: TextField(
+                                              controller: _messageController,
+                                              focusNode: _textFieldFocusNode,
+                                              autofocus: true,
+                                              onSubmitted: (value) {
+                                                _sendPublicMessage();
+                                              },
+                                              decoration: InputDecoration(
+                                                hintText: _isRecordingVoice ? "جاري التسجيل..." : "اكتب رسالة في الشات العام...",
+                                                hintStyle: const TextStyle(fontSize: 12),
+                                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+                                                filled: true,
+                                                fillColor: Colors.grey.shade100,
+                                                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      IconButton(
-                                        icon: const Icon(Icons.send, color: Colors.purple, size: 22),
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                        onPressed: _sendPublicMessage,
-                                      ),
-                                    ],
+                                        const SizedBox(width: 8),
+                                        IconButton(
+                                          icon: const Icon(Icons.send, color: Colors.purple, size: 22),
+                                          padding: EdgeInsets.zero,
+                                          constraints: const BoxConstraints(),
+                                          onPressed: _sendPublicMessage,
+                                        ),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
 
-                    ..._activeChatWindows.map((memberName) {
-                      final isMinimized = _minimizedWindows[memberName] ?? false;
-                      final index = _activeChatWindows.indexOf(memberName);
+                      ..._activeChatWindows.map((memberName) {
+                        final isMinimized = _minimizedWindows[memberName] ?? false;
+                        final index = _activeChatWindows.indexOf(memberName);
 
-                      final pos = isMinimized
-                          ? Offset(10, MediaQuery.of(context).size.height - 80.0 - (index * 45))
-                          : (_windowPositions[memberName] ?? const Offset(50, 100));
+                        final pos = isMinimized
+                            ? Offset(10, MediaQuery.of(context).size.height - 80.0 - (index * 45))
+                            : (_windowPositions[memberName] ?? const Offset(50, 100));
 
-                      return Positioned(
-                        left: isMobile ? 10 : pos.dx,
-                        top: isMobile ? (80.0 + (index * 45)) : pos.dy,
-                        right: isMobile ? 10 : null,
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onPanUpdate: (details) {
-                            if (!isMobile && !isMinimized) {
-                              setState(() {
-                                final currentPos = _windowPositions[memberName] ?? const Offset(50, 100);
-                                _windowPositions[memberName] = Offset(
-                                  currentPos.dx + details.delta.dx,
-                                  currentPos.dy + details.delta.dy,
-                                );
-                              });
-                            }
-                          },
-                          child: Container(
-                            width: isMobile ? null : 260,
-                            height: isMinimized ? 40 : 300,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6)],
-                              border: Border.all(color: Colors.purple.shade400),
-                            ),
-                            child: StreamBuilder<QuerySnapshot>(
-                              stream: _firestore.collection('inbox').snapshots(),
-                              builder: (context, snapshot) {
-                                final allDocs = snapshot.data?.docs ?? [];
-                                final messages = allDocs.map((doc) => doc.data() as Map<String, dynamic>).where((msg) {
-                                  String sender = msg['sender'] ?? '';
-                                  String receiver = msg['receiver'] ?? '';
-                                  return (sender == activeUserName && receiver == memberName) ||
-                                         (sender == memberName && receiver == activeUserName);
-                                }).toList();
-
-                                messages.sort((a, b) {
-                                  var tA = a['timestamp'];
-                                  var tB = b['timestamp'];
-                                  if (tA == null || tB == null) return 0;
-                                  return (tA as Timestamp).compareTo(tB as Timestamp);
+                        return Positioned(
+                          left: isMobile ? 10 : pos.dx,
+                          top: isMobile ? (80.0 + (index * 45)) : pos.dy,
+                          right: isMobile ? 10 : null,
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onPanUpdate: (details) {
+                              if (!isMobile && !isMinimized) {
+                                setState(() {
+                                  final currentPos = _windowPositions[memberName] ?? const Offset(50, 100);
+                                  _windowPositions[memberName] = Offset(
+                                    currentPos.dx + details.delta.dx,
+                                    currentPos.dy + details.delta.dy,
+                                  );
                                 });
+                              }
+                            },
+                            child: Container(
+                              width: isMobile ? null : 280,
+                              height: isMinimized ? 40 : 320,
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 6)],
+                                border: Border.all(color: Colors.purple.shade400),
+                              ),
+                              child: StreamBuilder<QuerySnapshot>(
+                                stream: _firestore.collection('inbox').snapshots(),
+                                builder: (context, snapshot) {
+                                  final allDocs = snapshot.data?.docs ?? [];
+                                  final messages = allDocs.map((doc) => doc.data() as Map<String, dynamic>).where((msg) {
+                                    String sender = msg['sender'] ?? '';
+                                    String receiver = msg['receiver'] ?? '';
+                                    return (sender == activeUserName && receiver == memberName) ||
+                                           (sender == memberName && receiver == activeUserName);
+                                  }).toList();
 
-                                return FloatingChatBox(
-                                  memberName: memberName,
-                                  currentUserName: activeUserName,
-                                  messages: messages,
-                                  isMinimized: isMinimized,
-                                  onClose: () => _closePrivateChat(memberName),
-                                  onMinimize: () => _toggleMinimizeChat(memberName),
-                                  onSend: (text, isImg, isVoiceMsg) async {
-                                    await _firestore.collection('inbox').add({
-                                      "sender": activeUserName, 
-                                      "receiver": memberName, 
-                                      "text": text,
-                                      "isImage": isImg,
-                                      "isVoice": isVoiceMsg,
-                                      "isRead": false,
-                                      "timestamp": FieldValue.serverTimestamp(),
-                                    });
-                                  },
-                                  onPickImage: () async {
-                                    await _pickAndSendImage((path, isImg) async {
+                                  messages.sort((a, b) {
+                                    var tA = a['timestamp'];
+                                    var tB = b['timestamp'];
+                                    if (tA == null || tB == null) return 0;
+                                    return (tA as Timestamp).compareTo(tB as Timestamp);
+                                  });
+
+                                  return FloatingChatBox(
+                                    memberName: memberName,
+                                    currentUserName: activeUserName,
+                                    messages: messages,
+                                    isMinimized: isMinimized,
+                                    onClose: () => _closePrivateChat(memberName),
+                                    onMinimize: () => _toggleMinimizeChat(memberName),
+                                    onSend: (text, isImg, isVoiceMsg) async {
                                       await _firestore.collection('inbox').add({
-                                        "sender": activeUserName,
-                                        "receiver": memberName,
-                                        "text": path,
+                                        "sender": activeUserName, 
+                                        "receiver": memberName, 
+                                        "text": text,
                                         "isImage": isImg,
-                                        "isVoice": false,
+                                        "isVoice": isVoiceMsg,
                                         "isRead": false,
                                         "timestamp": FieldValue.serverTimestamp(),
                                       });
-                                    });
-                                  },
-                                );
-                              },
+                                    },
+                                    onPickImage: () async {
+                                      await _pickAndSendImage((path, isImg) async {
+                                        await _firestore.collection('inbox').add({
+                                          "sender": activeUserName,
+                                          "receiver": memberName,
+                                          "text": path,
+                                          "isImage": isImg,
+                                          "isVoice": false,
+                                          "isRead": false,
+                                          "timestamp": FieldValue.serverTimestamp(),
+                                        });
+                                      });
+                                    },
+                                  );
+                                },
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    }),
-                  ],
+                        );
+                      }),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1012,6 +1044,32 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
     }
   }
 
+  void _showPrivateImageDialog(BuildContext context, Uint8List imageBytes) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black.withOpacity(0.9),
+        child: Stack(
+          children: [
+            Center(
+              child: InteractiveViewer(
+                child: Image.memory(imageBytes),
+              ),
+            ),
+            Positioned(
+              top: 10,
+              left: 10,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                onPressed: () => Navigator.pop(context),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _togglePrivateRecord() async {
     if (_isRecordingPrivateVoice) {
       try {
@@ -1125,12 +1183,16 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
                                     try {
                                       final textVal = msg["text"].toString();
                                       if (textVal.contains(',')) {
-                                        return Image.memory(
-                                          base64Decode(textVal.split(',').last),
-                                          width: 100,
-                                          height: 100,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (c, e, s) => const Text("صورة غير صالحة ⚠️", style: TextStyle(fontSize: 10, color: Colors.red)),
+                                        final imageBytes = base64Decode(textVal.split(',').last);
+                                        return GestureDetector(
+                                          onTap: () => _showPrivateImageDialog(context, imageBytes),
+                                          child: Image.memory(
+                                            imageBytes,
+                                            width: 100,
+                                            height: 100,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (c, e, s) => const Text("صورة غير صالحة ⚠️", style: TextStyle(fontSize: 10, color: Colors.red)),
+                                          ),
                                         );
                                       } else {
                                         return const Text("صورة قديمة ⚠️", style: TextStyle(fontSize: 10, color: Colors.grey));
