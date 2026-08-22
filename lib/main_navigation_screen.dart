@@ -45,7 +45,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     super.dispose();
   }
 
-  // دالة صوت التنبيه العام التي تعمل في خلفية التطبيق بأكمله
   Future<void> _playGlobalNotificationSound() async {
     try {
       await _globalAudioPlayer.play(ap.UrlSource('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
@@ -65,7 +64,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // مراقبة الطلبات الجديدة في الخلفية طالما التطبيق مفتوح وفي أي صفحة
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance.collection('talents').snapshots(),
       builder: (context, globalSnapshot) {
@@ -131,6 +129,70 @@ PreferredSizeWidget customAppBar(String titleText) {
     backgroundColor: const Color(0xFF7B1FA2),
     iconTheme: const IconThemeData(color: Colors.white),
     elevation: 2,
+  );
+}
+
+// دالة مساعدة لإرسال رسالة مباشرة لأي موهبة من الدليل
+void showDirectMessageDialog(BuildContext context, String recipientName) {
+  final TextEditingController senderController = TextEditingController();
+  final TextEditingController messageController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('إرسال رسالة إلى: $recipientName ✉️', style: const TextStyle(color: Color(0xFF7B1FA2), fontWeight: FontWeight.bold, fontSize: 16)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: senderController,
+            decoration: const InputDecoration(labelText: 'اسمك الحقيقي (المرسل)', border: OutlineInputBorder()),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: messageController,
+            maxLines: 3,
+            decoration: const InputDecoration(labelText: 'اكتب رسالتك هنا...', border: OutlineInputBorder()),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('إلغاء', style: TextStyle(color: Colors.grey)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7B1FA2)),
+          onPressed: () async {
+            String sender = senderController.text.trim();
+            String msg = messageController.text.trim();
+
+            if (sender.isEmpty || msg.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('الرجاء إدخال اسمك ومحتوى الرسالة ❌'), backgroundColor: Colors.red),
+              );
+              return;
+            }
+
+            await FirebaseFirestore.instance.collection('inbox').add({
+              "sender": sender,
+              "receiver": recipientName,
+              "text": msg,
+              "isImage": false,
+              "isVoice": false,
+              "isRead": false,
+              "timestamp": FieldValue.serverTimestamp(),
+            });
+
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('تم إرسال الرسالة إلى صندوق بريد الموهبة بنجاح ✅'), backgroundColor: Colors.green),
+            );
+          },
+          child: const Text('إرسال 🚀', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
   );
 }
 
@@ -419,9 +481,24 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
               ],
             ),
             const SizedBox(height: 16),
-            Text(
-              widget.talent.name,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  widget.talent.name,
+                  style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
+                ),
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF7B1FA2),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  ),
+                  icon: const Icon(Icons.mail, size: 16, color: Colors.white),
+                  label: const Text('مراسلة', style: TextStyle(color: Colors.white, fontSize: 12)),
+                  onPressed: () => showDirectMessageDialog(context, widget.talent.name),
+                ),
+              ],
             ),
             const SizedBox(height: 6),
             
@@ -706,27 +783,30 @@ Widget buildTalentListWithAllWorks(BuildContext context, String categoryKeyword,
                     ? 'الأعمال: ${workTitles.join(' - ')}' 
                     : 'لا توجد أعمال منشورة';
 
-                return InkWell(
-                  onTap: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => TalentDetailScreen(talent: talent, icon: icon)));
-                  },
-                  child: Card(
-                    elevation: 2,
-                    color: Colors.white,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    child: ListTile(
-                      leading: Icon(icon, color: const Color(0xFF7B1FA2)),
-                      title: Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 4.0),
-                        child: Text(
-                          worksText, 
-                          maxLines: 2, 
-                          overflow: TextOverflow.ellipsis, 
-                          style: const TextStyle(color: Colors.purple, fontSize: 13),
-                        ),
+                return Card(
+                  elevation: 2,
+                  color: Colors.white,
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    leading: Icon(icon, color: const Color(0xFF7B1FA2)),
+                    title: Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 4.0),
+                      child: Text(
+                        worksText, 
+                        maxLines: 2, 
+                        overflow: TextOverflow.ellipsis, 
+                        style: const TextStyle(color: Colors.purple, fontSize: 13),
                       ),
                     ),
+                    trailing: IconButton(
+                      icon: const Icon(Icons.mail_outline, color: Color(0xFF7B1FA2)),
+                      tooltip: 'مراسلة الموهبة',
+                      onPressed: () => showDirectMessageDialog(context, talent.name),
+                    ),
+                    onTap: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => TalentDetailScreen(talent: talent, icon: icon)));
+                    },
                   ),
                 );
               },
@@ -841,7 +921,18 @@ class GuideScreen extends StatelessWidget {
                       child: ListTile(
                         title: Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text(worksText, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.purple, fontSize: 13)),
-                        trailing: Text(talent.category, style: const TextStyle(color: Color(0xFF7B1FA2), fontWeight: FontWeight.bold)),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.mail_outline, color: Color(0xFF7B1FA2)),
+                              tooltip: 'مراسلة الموهبة',
+                              onPressed: () => showDirectMessageDialog(context, talent.name),
+                            ),
+                            const SizedBox(width: 4),
+                            Text(talent.category, style: const TextStyle(color: Color(0xFF7B1FA2), fontWeight: FontWeight.bold)),
+                          ],
+                        ),
                         onTap: () {
                           Navigator.push(
                             context,
