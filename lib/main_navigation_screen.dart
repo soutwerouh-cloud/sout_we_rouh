@@ -4,28 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:audioplayers/audioplayers.dart' as ap;
 import 'dart:convert';
-
-class TalentModel {
-  final String name;
-  final String category;
-  final String bio;
-  final String phone;
-  final String email;
-  final String password;
-  final String profileImage;
-  bool isApproved;
-
-  TalentModel({
-    required this.name,
-    required this.category,
-    required this.bio,
-    required this.phone,
-    this.email = '', 
-    this.password = '',
-    this.profileImage = '',
-    this.isApproved = false,
-  });
-}
+import 'talent_model.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
@@ -129,70 +108,6 @@ PreferredSizeWidget customAppBar(String titleText) {
     backgroundColor: const Color(0xFF7B1FA2),
     iconTheme: const IconThemeData(color: Colors.white),
     elevation: 2,
-  );
-}
-
-// دالة مساعدة لإرسال رسالة مباشرة لأي موهبة من الدليل
-void showDirectMessageDialog(BuildContext context, String recipientName) {
-  final TextEditingController senderController = TextEditingController();
-  final TextEditingController messageController = TextEditingController();
-
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text('إرسال رسالة إلى: $recipientName ✉️', style: const TextStyle(color: Color(0xFF7B1FA2), fontWeight: FontWeight.bold, fontSize: 16)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: senderController,
-            decoration: const InputDecoration(labelText: 'اسمك الحقيقي (المرسل)', border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: messageController,
-            maxLines: 3,
-            decoration: const InputDecoration(labelText: 'اكتب رسالتك هنا...', border: OutlineInputBorder()),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('إلغاء', style: TextStyle(color: Colors.grey)),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7B1FA2)),
-          onPressed: () async {
-            String sender = senderController.text.trim();
-            String msg = messageController.text.trim();
-
-            if (sender.isEmpty || msg.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('الرجاء إدخال اسمك ومحتوى الرسالة ❌'), backgroundColor: Colors.red),
-              );
-              return;
-            }
-
-            await FirebaseFirestore.instance.collection('inbox').add({
-              "sender": sender,
-              "receiver": recipientName,
-              "text": msg,
-              "isImage": false,
-              "isVoice": false,
-              "isRead": false,
-              "timestamp": FieldValue.serverTimestamp(),
-            });
-
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('تم إرسال الرسالة إلى صندوق بريد الموهبة بنجاح ✅'), backgroundColor: Colors.green),
-            );
-          },
-          child: const Text('إرسال 🚀', style: TextStyle(color: Colors.white)),
-        ),
-      ],
-    ),
   );
 }
 
