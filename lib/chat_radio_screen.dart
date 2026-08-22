@@ -331,13 +331,12 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final availableHeight = screenHeight - keyboardHeight;
     final bool isMobile = screenWidth < 700; 
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        resizeToAvoidBottomInset: true,
+        resizeToAvoidBottomInset: false, // تم الإلغاء لمنع انضغاط الشاشة والشاشة البنفسجية
         appBar: AppBar(
           title: Row(
             children: [
@@ -407,7 +406,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
         ),
         body: SafeArea(
           child: Padding(
-            padding: EdgeInsets.only(bottom: keyboardHeight),
+            padding: EdgeInsets.only(bottom: keyboardHeight), // رفع التطبيق فوق الكيبورد بدقة بدون كسر الواجهة
             child: Column(
               children: [
                 Container(
@@ -732,14 +731,14 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
 
                       ..._activeChatWindows.map((memberName) {
                         final isMinimized = _minimizedWindows[memberName] ?? false;
-                        final index = _activeChatWindows.indexOf(memberName);
                         
                         double boxHeight = isMinimized ? 40 : 360; 
                         double safeTop = _windowPositions[memberName]?.dy ?? 80.0;
                         double safeLeft = _windowPositions[memberName]?.dx ?? 40.0;
 
-                        if (safeTop + boxHeight > availableHeight) {
-                          safeTop = availableHeight - boxHeight - 10;
+                        double maxAllowedTop = screenHeight - keyboardHeight - boxHeight - 60;
+                        if (safeTop > maxAllowedTop) {
+                          safeTop = maxAllowedTop > 10 ? maxAllowedTop : 10;
                         }
                         if (safeTop < 10) safeTop = 10;
 
