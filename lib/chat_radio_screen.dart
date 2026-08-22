@@ -8,6 +8,7 @@ import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart' as ap;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
+import 'package:path_provider/path_provider.dart';
 
 class ChatRadioScreen extends StatefulWidget {
   final bool isSubscribed; 
@@ -175,7 +176,12 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     } else {
       try {
         if (await _audioRecorder.hasPermission()) {
-          await _audioRecorder.start(const RecordConfig()); 
+          String filePath = '';
+          if (!kIsWeb) {
+            final dir = await getTemporaryDirectory();
+            filePath = '${dir.path}/audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+          }
+          await _audioRecorder.start(const RecordConfig(), path: filePath); 
           setState(() { _isRecordingVoice = true; });
         }
       } catch (e) {
@@ -1107,7 +1113,12 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
     } else {
       try {
         if (await _privateAudioRecorder.hasPermission()) {
-          await _privateAudioRecorder.start(const RecordConfig()); 
+          String filePath = '';
+          if (!kIsWeb) {
+            final dir = await getTemporaryDirectory();
+            filePath = '${dir.path}/private_audio_${DateTime.now().millisecondsSinceEpoch}.m4a';
+          }
+          await _privateAudioRecorder.start(const RecordConfig(), path: filePath); 
           setState(() { _isRecordingPrivateVoice = true; });
         }
       } catch (e) {
