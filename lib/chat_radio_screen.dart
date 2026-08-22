@@ -142,7 +142,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     if (_messageController.text.trim().isNotEmpty) {
       String msgText = _messageController.text.trim();
       _messageController.clear();
-      _textFieldFocusNode.requestFocus();
+      _textFieldFocusNode.unfocus(); // إزالة التركيز الإجباري لمنع مشاكل الكيبورد والشاشة البنفسجية
 
       await _firestore.collection('messages').add({
         "sender": activeUserName,
@@ -188,7 +188,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     if (!_activeChatWindows.contains(memberName)) {
       setState(() {
         _activeChatWindows.add(memberName);
-        _windowPositions[memberName] = const Offset(80, 150);
+        _windowPositions[memberName] = const Offset(50, 100);
         _minimizedWindows[memberName] = false;
       });
     } else {
@@ -683,7 +683,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                                             child: TextField(
                                               controller: _messageController,
                                               focusNode: _textFieldFocusNode,
-                                              autofocus: false, // تم الإلغاء لمنع الشاشة البنفسجية
+                                              autofocus: false,
                                               onSubmitted: (value) {
                                                 _sendPublicMessage();
                                               },
@@ -721,19 +721,17 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
 
                         final pos = isMinimized
                             ? Offset(10, MediaQuery.of(context).size.height - 80.0 - (index * 45))
-                            : (_windowPositions[memberName] ?? const Offset(50, 100));
+                            : (_windowPositions[memberName] ?? const Offset(40, 80));
 
                         return Positioned(
-                          left: isMobile ? 10 : pos.dx,
-                          top: isMobile ? (80.0 + (index * 45)) : pos.dy,
-                          right: isMobile ? 10 : null,
+                          left: pos.dx,
+                          top: pos.dy,
                           child: GestureDetector(
                             behavior: HitTestBehavior.opaque,
                             onPanUpdate: (details) {
-                              // تم السماح بالحركة على الموبايل والتابلت والويب معاً
                               if (!isMinimized) {
                                 setState(() {
-                                  final currentPos = _windowPositions[memberName] ?? const Offset(50, 100);
+                                  final currentPos = _windowPositions[memberName] ?? const Offset(40, 80);
                                   _windowPositions[memberName] = Offset(
                                     currentPos.dx + details.delta.dx,
                                     currentPos.dy + details.delta.dy,
@@ -742,7 +740,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                               }
                             },
                             child: Container(
-                              width: isMobile ? null : 280,
+                              width: 270, // عرض ثابت ومناسب للسحب على الموبايل والتابلت
                               height: isMinimized ? 40 : 320,
                               decoration: BoxDecoration(
                                 color: Colors.white,
@@ -1235,12 +1233,12 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
                   child: TextField(
                     controller: _controller,
                     focusNode: _privateFocusNode,
-                    autofocus: false, // تم الإلغاء
+                    autofocus: false,
                     onSubmitted: (value) {
                       if (value.trim().isNotEmpty) {
                         widget.onSend(value, false, false);
                         _controller.clear();
-                        _privateFocusNode.requestFocus();
+                        _privateFocusNode.unfocus();
                       }
                     },
                     decoration: InputDecoration(
@@ -1259,7 +1257,7 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
                     if (_controller.text.trim().isNotEmpty) {
                       widget.onSend(_controller.text, false, false);
                       _controller.clear();
-                      _privateFocusNode.requestFocus();
+                      _privateFocusNode.unfocus();
                     }
                   },
                 ),
