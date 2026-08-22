@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // نموذج الموهبة
 class TalentItem {
@@ -13,7 +14,7 @@ class TalentItem {
   int likesCount;
   bool isLiked;
   bool isApproved;
-  final String email; // أضفنا الإيميل هنا لضمان ظهوره في صفحة الأدمن
+  final String email;
 
   TalentItem({
     required this.id,
@@ -26,11 +27,10 @@ class TalentItem {
     this.transactionRef = '',
     this.likesCount = 12,
     this.isLiked = false,
-    this.isApproved = false, // افتراضياً الطلب غير معتمد لحد ما الأدمن يراجعه
+    this.isApproved = false,
     this.email = '',
   });
 
-  // تحويل الكائن إلى Map لتخزينه في Firestore
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -46,7 +46,6 @@ class TalentItem {
     };
   }
 
-  // إنشاء كائن TalentItem من بيانات Firestore
   factory TalentItem.fromMap(Map<String, dynamic> map, String docId) {
     IconData defaultIcon = Icons.mic;
     Color defaultColor = Colors.deepPurple;
@@ -78,6 +77,70 @@ class TalentItem {
 
 const String adminEmail = "hayamahmoud049@gmail.com";
 TalentItem? currentUserProfile;
+
+// دالة مساعدة لإرسال رسالة مباشرة لأي موهبة
+void showDirectMessageDialog(BuildContext context, String recipientName) {
+  final TextEditingController senderController = TextEditingController();
+  final TextEditingController messageController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('إرسال رسالة إلى: $recipientName ✉️', style: const TextStyle(color: Color(0xFF7B1FA2), fontWeight: FontWeight.bold, fontSize: 16)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: senderController,
+            decoration: const InputDecoration(labelText: 'اسمك الحقيقي (المرسل)', border: OutlineInputBorder()),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: messageController,
+            maxLines: 3,
+            decoration: const InputDecoration(labelText: 'اكتب رسالتك هنا...', border: OutlineInputBorder()),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('إلغاء', style: TextStyle(color: Colors.grey)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7B1FA2)),
+          onPressed: () async {
+            String sender = senderController.text.trim();
+            String msg = messageController.text.trim();
+
+            if (sender.isEmpty || msg.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('الرجاء إدخال اسمك ومحتوى الرسالة ❌'), backgroundColor: Colors.red),
+              );
+              return;
+            }
+
+            await FirebaseFirestore.instance.collection('inbox').add({
+              "sender": sender,
+              "receiver": recipientName,
+              "text": msg,
+              "isImage": false,
+              "isVoice": false,
+              "isRead": false,
+              "timestamp": FieldValue.serverTimestamp(),
+            });
+
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('تم إرسال الرسالة إلى صندوق بريد الموهبة بنجاح ✅'), backgroundColor: Colors.green),
+            );
+          },
+          child: const Text('إرسال 🚀', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
+}
 
 // قائمة المواهب الافتراضية
 List<TalentItem> globalTalentsList = [
