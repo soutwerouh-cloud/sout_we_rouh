@@ -194,7 +194,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     if (!_activeChatWindows.contains(memberName)) {
       setState(() {
         _activeChatWindows.add(memberName);
-        _windowPositions[memberName] = const Offset(50, 100);
+        _windowPositions[memberName] = const Offset(20, 20); // السماح بفتح النافذة للأعلى أكثر
         _minimizedWindows[memberName] = false;
       });
     } else {
@@ -336,7 +336,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        resizeToAvoidBottomInset: false, // تم الإلغاء لمنع انضغاط الشاشة والشاشة البنفسجية
+        resizeToAvoidBottomInset: false,
         appBar: AppBar(
           title: Row(
             children: [
@@ -406,7 +406,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
         ),
         body: SafeArea(
           child: Padding(
-            padding: EdgeInsets.only(bottom: keyboardHeight), // رفع التطبيق فوق الكيبورد بدقة بدون كسر الواجهة
+            padding: EdgeInsets.only(bottom: keyboardHeight),
             child: Column(
               children: [
                 Container(
@@ -732,20 +732,20 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                       ..._activeChatWindows.map((memberName) {
                         final isMinimized = _minimizedWindows[memberName] ?? false;
                         
-                        double boxHeight = isMinimized ? 40 : 360; 
-                        double safeTop = _windowPositions[memberName]?.dy ?? 80.0;
-                        double safeLeft = _windowPositions[memberName]?.dx ?? 40.0;
+                        double boxHeight = isMinimized ? 40 : 300; 
+                        double safeTop = _windowPositions[memberName]?.dy ?? 10.0; // السماح بالوصول لأعلى الشاشة بحرية
+                        double safeLeft = _windowPositions[memberName]?.dx ?? 10.0;
 
-                        double maxAllowedTop = screenHeight - keyboardHeight - boxHeight - 60;
+                        double maxAllowedTop = screenHeight - keyboardHeight - boxHeight - 40;
                         if (safeTop > maxAllowedTop) {
-                          safeTop = maxAllowedTop > 10 ? maxAllowedTop : 10;
+                          safeTop = maxAllowedTop > 0 ? maxAllowedTop : 0;
                         }
-                        if (safeTop < 10) safeTop = 10;
+                        if (safeTop < 0) safeTop = 0;
 
                         if (safeLeft + 270 > screenWidth) {
                           safeLeft = screenWidth - 270 - 10;
                         }
-                        if (safeLeft < 10) safeLeft = 10;
+                        if (safeLeft < 0) safeLeft = 0;
 
                         return Positioned(
                           left: safeLeft,
