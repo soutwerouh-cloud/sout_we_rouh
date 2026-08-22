@@ -142,7 +142,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     if (_messageController.text.trim().isNotEmpty) {
       String msgText = _messageController.text.trim();
       _messageController.clear();
-      _textFieldFocusNode.unfocus(); // إزالة التركيز الإجباري لمنع مشاكل الكيبورد والشاشة البنفسجية
+      _textFieldFocusNode.unfocus();
 
       await _firestore.collection('messages').add({
         "sender": activeUserName,
@@ -175,7 +175,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     } else {
       try {
         if (await _audioRecorder.hasPermission()) {
-          await _audioRecorder.start(const RecordConfig(), path: '');
+          await _audioRecorder.start(const RecordConfig()); 
           setState(() { _isRecordingVoice = true; });
         }
       } catch (e) {
@@ -228,7 +228,13 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
           children: [
             Center(
               child: InteractiveViewer(
-                child: Image.memory(imageBytes, fit: BoxFit.contain),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.9,
+                    maxHeight: MediaQuery.of(context).size.height * 0.9,
+                  ),
+                  child: Image.memory(imageBytes, fit: BoxFit.contain),
+                ),
               ),
             ),
             Positioned(
@@ -317,6 +323,9 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final availableHeight = screenHeight - keyboardHeight;
     final bool isMobile = screenWidth < 700; 
 
     return Directionality(
@@ -392,7 +401,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
         ),
         body: SafeArea(
           child: Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+            padding: EdgeInsets.only(bottom: keyboardHeight),
             child: Column(
               children: [
                 Container(
@@ -718,30 +727,39 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                       ..._activeChatWindows.map((memberName) {
                         final isMinimized = _minimizedWindows[memberName] ?? false;
                         final index = _activeChatWindows.indexOf(memberName);
+                        
+                        double boxHeight = isMinimized ? 40 : 360; 
+                        double safeTop = _windowPositions[memberName]?.dy ?? 80.0;
+                        double safeLeft = _windowPositions[memberName]?.dx ?? 40.0;
 
-                        final pos = isMinimized
-                            ? Offset(10, MediaQuery.of(context).size.height - 80.0 - (index * 45))
-                            : (_windowPositions[memberName] ?? const Offset(40, 80));
+                        if (safeTop + boxHeight > availableHeight) {
+                          safeTop = availableHeight - boxHeight - 10;
+                        }
+                        if (safeTop < 10) safeTop = 10;
+
+                        if (safeLeft + 270 > screenWidth) {
+                          safeLeft = screenWidth - 270 - 10;
+                        }
+                        if (safeLeft < 10) safeLeft = 10;
 
                         return Positioned(
-                          left: pos.dx,
-                          top: pos.dy,
+                          left: safeLeft,
+                          top: safeTop,
                           child: GestureDetector(
                             behavior: HitTestBehavior.opaque,
                             onPanUpdate: (details) {
                               if (!isMinimized) {
                                 setState(() {
-                                  final currentPos = _windowPositions[memberName] ?? const Offset(40, 80);
                                   _windowPositions[memberName] = Offset(
-                                    currentPos.dx + details.delta.dx,
-                                    currentPos.dy + details.delta.dy,
+                                    safeLeft + details.delta.dx,
+                                    safeTop + details.delta.dy,
                                   );
                                 });
                               }
                             },
                             child: Container(
-                              width: 270, // عرض ثابت ومناسب للسحب على الموبايل والتابلت
-                              height: isMinimized ? 40 : 320,
+                              width: 270,
+                              height: boxHeight,
                               decoration: BoxDecoration(
                                 color: Colors.white,
                                 borderRadius: BorderRadius.circular(12),
@@ -906,7 +924,6 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
   }
 }
 
-// دالة تسجيل الدخول
 void showChatRadioLoginDialog(BuildContext context) {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -988,7 +1005,6 @@ void showChatRadioLoginDialog(BuildContext context) {
   );
 }
 
-// كلاس صندوق الدردشة العائم
 class FloatingChatBox extends StatefulWidget {
   final String memberName;
   final String currentUserName;
@@ -1049,7 +1065,13 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
           children: [
             Center(
               child: InteractiveViewer(
-                child: Image.memory(imageBytes, fit: BoxFit.contain),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.9,
+                    maxHeight: MediaQuery.of(context).size.height * 0.9,
+                  ),
+                  child: Image.memory(imageBytes, fit: BoxFit.contain),
+                ),
               ),
             ),
             Positioned(
@@ -1085,7 +1107,7 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
     } else {
       try {
         if (await _privateAudioRecorder.hasPermission()) {
-          await _privateAudioRecorder.start(const RecordConfig(), path: '');
+          await _privateAudioRecorder.start(const RecordConfig()); 
           setState(() { _isRecordingPrivateVoice = true; });
         }
       } catch (e) {
@@ -1138,7 +1160,7 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
             child: ListView.builder(
               controller: _privateScrollController,
               reverse: true,
-              padding: const EdgeInsets.all(8),
+              padding: const EdgeInsets.only(left: 8, right: 8, bottom: 16, top: 8),
               itemCount: widget.messages.length,
               itemBuilder: (context, index) {
                 final reversedIndex = widget.messages.length - 1 - index;
