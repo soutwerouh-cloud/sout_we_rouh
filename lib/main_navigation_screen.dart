@@ -920,6 +920,7 @@ class GuideScreen extends StatelessWidget {
                       child: ListTile(
                         title: Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text(worksText, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.purple, fontSize: 13)),
+                        // تم إضافة أيقونة المراسلة هنا في دليل المواهب
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
