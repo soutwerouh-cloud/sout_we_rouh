@@ -19,7 +19,6 @@ class TalentMessagesScreen extends StatelessWidget {
         stream: FirebaseFirestore.instance
             .collection('inbox')
             .where('receiver', isEqualTo: talentName.trim())
-            .orderBy('timestamp', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -31,7 +30,15 @@ class TalentMessagesScreen extends StatelessWidget {
             );
           }
 
-          var messages = snapshot.data!.docs;
+          var messages = snapshot.data!.docs.toList();
+
+          // ترتيب الرسائل برمجياً من الأحدث للأقدم لضمان عدم الحاجة لـ Index في فايربيز
+          messages.sort((a, b) {
+            var timeA = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+            var timeB = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
+            if (timeA == null || timeB == null) return 0;
+            return timeB.compareTo(timeA);
+          });
 
           return ListView.builder(
             padding: const EdgeInsets.all(16),

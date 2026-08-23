@@ -133,9 +133,10 @@ void showDirectMessageDialog(BuildContext context, String recipientName) {
               return;
             }
 
+            // تم إضافة .trim() لضمان تطابق اسم المستلم في صندوق البريد
             await FirebaseFirestore.instance.collection('inbox').add({
               "sender": sender,
-              "receiver": recipientName,
+              "receiver": recipientName.trim(),
               "text": msg,
               "isImage": false,
               "isVoice": false,
