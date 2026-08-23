@@ -338,44 +338,7 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: Row(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(6),
-              child: Image.asset(
-                'assets/logo.png',
-                width: 40,
-                height: 40,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => const Icon(Icons.star, color: Colors.white, size: 30),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Text(widget.talent.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ],
-        ),
-        backgroundColor: const Color(0xFF7B1FA2),
-        iconTheme: const IconThemeData(color: Colors.white),
-        elevation: 2,
-        actions: [
-          // زر صندوق البريد الخاص بالموهبة لعرض رسائلها الواردة
-          IconButton(
-            icon: const Icon(Icons.email, color: Colors.white),
-            tooltip: 'صندوق البريد والرسائل',
-            onPressed: () {
-              _checkPasswordAndExecute(() {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => TalentMessagesScreen(talentName: widget.talent.name),
-                  ),
-                );
-              });
-            },
-          ),
-        ],
-      ),
+      appBar: customAppBar(widget.talent.name),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -454,6 +417,29 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
                 ),
               ],
             ),
+            const SizedBox(height: 10),
+            
+            // زر صندوق البريد المباشر والبارز للموهبة
+            ElevatedButton.icon(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7B1FA2),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.mark_email_read, size: 18, color: Colors.white),
+              label: const Text('فتح صندوق الرسائل والوارد 📬', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+              onPressed: () {
+                _checkPasswordAndExecute(() {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => TalentMessagesScreen(talentName: widget.talent.name),
+                    ),
+                  );
+                });
+              },
+            ),
+
             const SizedBox(height: 6),
             
             StreamBuilder<QuerySnapshot>(
