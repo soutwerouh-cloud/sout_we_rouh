@@ -799,7 +799,7 @@ Widget buildTalentListWithAllWorks(BuildContext context, String categoryKeyword,
                       ),
                     ),
                     trailing: IconButton(
-                      icon: const Icon(Icons.mail_outline, color: Color(0xFF7B1FA2)),
+                      icon: const Icon(Icons.mail, color: Color(0xFF7B1FA2)),
                       tooltip: 'مراسلة الموهبة',
                       onPressed: () => showDirectMessageDialog(context, talent.name),
                     ),
@@ -924,7 +924,7 @@ class GuideScreen extends StatelessWidget {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              icon: const Icon(Icons.mail_outline, color: Color(0xFF7B1FA2)),
+                              icon: const Icon(Icons.mail, color: Color(0xFF7B1FA2)),
                               tooltip: 'مراسلة الموهبة',
                               onPressed: () => showDirectMessageDialog(context, talent.name),
                             ),
