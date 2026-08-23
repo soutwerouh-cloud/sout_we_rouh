@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TalentMessagesScreen extends StatelessWidget {
-  final String talentName; // اسم الموهبة الحالية (اللي فاتحة حسابها)
+  final String talentName;
 
   const TalentMessagesScreen({super.key, required this.talentName});
 
@@ -16,7 +16,6 @@ class TalentMessagesScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: StreamBuilder<QuerySnapshot>(
-        // بنسحب الرسائل اللي موجهة للموهبة دي من صندوق الوارد (inbox)
         stream: FirebaseFirestore.instance
             .collection('inbox')
             .where('receiver', isEqualTo: talentName.trim())
