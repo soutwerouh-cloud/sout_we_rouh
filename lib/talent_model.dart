@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 // نموذج الموهبة
-class TalentItem {
+class TalentModel {
   final String id;
   final String name;
   final String category;
@@ -15,20 +15,26 @@ class TalentItem {
   bool isLiked;
   bool isApproved;
   final String email;
+  final String bio;
+  final String password;
+  final String profileImage;
 
-  TalentItem({
-    required this.id,
+  TalentModel({
+    this.id = '',
     required this.name,
     required this.category,
-    required this.description,
-    required this.icon,
-    required this.themeColor,
+    this.description = '',
+    this.icon = Icons.mic,
+    this.themeColor = Colors.deepPurple,
     this.paymentMethod = 'Vodafone Cash',
     this.transactionRef = '',
     this.likesCount = 12,
     this.isLiked = false,
     this.isApproved = false,
     this.email = '',
+    this.bio = '',
+    this.password = '',
+    this.profileImage = '',
   });
 
   Map<String, dynamic> toMap() {
@@ -43,10 +49,13 @@ class TalentItem {
       'isLiked': isLiked,
       'isApproved': isApproved,
       'email': email,
+      'bio': bio,
+      'password': password,
+      'profileImage': profileImage,
     };
   }
 
-  factory TalentItem.fromMap(Map<String, dynamic> map, String docId) {
+  factory TalentModel.fromMap(Map<String, dynamic> map, String docId) {
     IconData defaultIcon = Icons.mic;
     Color defaultColor = Colors.deepPurple;
     
@@ -58,7 +67,7 @@ class TalentItem {
       defaultColor = Colors.indigo;
     }
 
-    return TalentItem(
+    return TalentModel(
       id: docId,
       name: map['name'] ?? '',
       category: map['category'] ?? 'singing',
@@ -71,12 +80,12 @@ class TalentItem {
       isLiked: map['isLiked'] ?? false,
       isApproved: map['isApproved'] ?? false,
       email: map['email'] ?? '',
+      bio: map['description'] ?? '',
+      password: map['password'] ?? '',
+      profileImage: map['profileImage'] ?? '',
     );
   }
 }
-
-const String adminEmail = "hayamahmoud049@gmail.com";
-TalentItem? currentUserProfile;
 
 // دالة مساعدة لإرسال رسالة مباشرة لأي موهبة
 void showDirectMessageDialog(BuildContext context, String recipientName) {
@@ -135,43 +144,9 @@ void showDirectMessageDialog(BuildContext context, String recipientName) {
               const SnackBar(content: Text('تم إرسال الرسالة إلى صندوق بريد الموهبة بنجاح ✅'), backgroundColor: Colors.green),
             );
           },
-          child: const Text('إرسال 🚀', style: TextStyle(color: Colors.white)),
+          child: const Text('إلغاء', style: TextStyle(color: Colors.white)),
         ),
       ],
     ),
   );
 }
-
-// قائمة المواهب الافتراضية
-List<TalentItem> globalTalentsList = [
-  TalentItem(
-    id: '1',
-    name: 'موهبة غناء',
-    category: 'singing',
-    description: 'صوت غنائي مميز يتمتع بطبقات صوتية قوية وإحساس عالي.',
-    icon: Icons.mic,
-    themeColor: Colors.deepPurple,
-    likesCount: 45,
-    isApproved: true,
-  ),
-  TalentItem(
-    id: '2',
-    name: 'موهبة شعر',
-    category: 'poetry',
-    description: 'كتابة قصائد وأغاني درامية ورومانسية بأسلوب عصري جذاب.',
-    icon: Icons.history_edu,
-    themeColor: Colors.purple,
-    likesCount: 60,
-    isApproved: true,
-  ),
-  TalentItem(
-    id: '3',
-    name: 'موهبة تلحين',
-    category: 'composing',
-    description: 'صياغة الألحان والتوزيع الموسيقي بأسلوب حديث.',
-    icon: Icons.music_note,
-    themeColor: Colors.indigo,
-    likesCount: 34,
-    isApproved: true,
-  ),
-];
