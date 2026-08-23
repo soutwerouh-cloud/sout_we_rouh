@@ -7,6 +7,64 @@ import 'dart:convert';
 import 'talent_model.dart';
 import 'talent_messages_screen.dart'; // <-- استيراد صفحة رسائل الموهبة هنا
 
+// دالة إرسال رسالة مباشرة لأي موهبة من الدليل
+void showDirectMessageDialog(BuildContext context, String receiverName) {
+  final TextEditingController senderController = TextEditingController();
+  final TextEditingController messageController = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Text('إرسال رسالة إلى: $receiverName ✉️', style: const TextStyle(color: Color(0xFF7B1FA2), fontWeight: FontWeight.bold)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextField(
+            controller: senderController,
+            decoration: const InputDecoration(labelText: 'اسمك أو صفتك', border: OutlineInputBorder()),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: messageController,
+            maxLines: 3,
+            decoration: const InputDecoration(labelText: 'نص الرسالة...', border: OutlineInputBorder()),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('إلغاء', style: TextStyle(color: Colors.grey)),
+        ),
+        ElevatedButton(
+          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7B1FA2)),
+          onPressed: () async {
+            if (senderController.text.trim().isNotEmpty && messageController.text.trim().isNotEmpty) {
+              await FirebaseFirestore.instance.collection('inbox').add({
+                'sender': senderController.text.trim(),
+                'receiver': receiverName.trim(),
+                'text': messageController.text.trim(),
+                'timestamp': FieldValue.serverTimestamp(),
+              });
+
+              if (!context.mounted) return;
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('تم ارسال الرسالة بنجاح للموهبة ✅'), backgroundColor: Colors.green),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('الرجاء إدخال الاسم ونصوص الرسالة ❌'), backgroundColor: Colors.red),
+              );
+            }
+          },
+          child: const Text('إرسال', style: TextStyle(color: Colors.white)),
+        ),
+      ],
+    ),
+  );
+}
+
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
