@@ -317,6 +317,7 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
                   'title': editTitleController.text.trim(),
                   'content': editContentController.text.trim(),
                 });
+                if (!mounted) return;
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('تم تعديل العمل بنجاح ✅'), backgroundColor: Colors.green),
@@ -586,6 +587,7 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
 
                                             if (confirm == true) {
                                               await FirebaseFirestore.instance.collection('artist_works').doc(workDoc.id).delete();
+                                              if (!mounted) return;
                                               if (mounted) {
                                                 ScaffoldMessenger.of(context).showSnackBar(
                                                   const SnackBar(content: Text('تم حذف العمل بنجاح 🗑️'), backgroundColor: Colors.red),
@@ -836,6 +838,7 @@ class GuideScreen extends StatelessWidget {
                       child: ListTile(
                         title: Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text(worksText, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.purple, fontSize: 13)),
+                        // تم ربط زر المراسلة هنا بدالة إرسال الرسائل مباشرة بدون أي تعقيد
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -1046,6 +1049,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                       'isApproved': true,
                                       'joinedAt': FieldValue.serverTimestamp(),
                                     });
+                                    if (!mounted) return;
                                     _showSmallMessage(context, 'تم تفعيل الموهبة بنجاح ✅', isError: false);
                                   },
                                 ),
@@ -1054,6 +1058,7 @@ class _AccountScreenState extends State<AccountScreen> {
                                 tooltip: 'حذف الطلب',
                                 onPressed: () async {
                                   await FirebaseFirestore.instance.collection('talents').doc(doc.id).delete();
+                                  if (!mounted) return;
                                   _showSmallMessage(context, 'تم حذف الطلب 🗑️');
                                 },
                               ),
