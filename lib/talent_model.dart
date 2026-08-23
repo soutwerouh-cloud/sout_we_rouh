@@ -11,6 +11,7 @@ class TalentModel {
   final Color themeColor;
   final String paymentMethod;
   final String transactionRef;
+  final String phone;
   int likesCount;
   bool isLiked;
   bool isApproved;
@@ -28,6 +29,7 @@ class TalentModel {
     this.themeColor = Colors.deepPurple,
     this.paymentMethod = 'Vodafone Cash',
     this.transactionRef = '',
+    this.phone = '',
     this.likesCount = 12,
     this.isLiked = false,
     this.isApproved = false,
@@ -45,6 +47,7 @@ class TalentModel {
       'description': description,
       'paymentMethod': paymentMethod,
       'transactionRef': transactionRef,
+      'phone': phone,
       'likesCount': likesCount,
       'isLiked': isLiked,
       'isApproved': isApproved,
@@ -76,6 +79,7 @@ class TalentModel {
       themeColor: defaultColor,
       paymentMethod: map['paymentMethod'] ?? 'Vodafone Cash',
       transactionRef: map['transactionRef'] ?? '',
+      phone: map['phone'] ?? map['transactionRef'] ?? '',
       likesCount: map['likesCount'] ?? 0,
       isLiked: map['isLiked'] ?? false,
       isApproved: map['isApproved'] ?? false,
@@ -144,7 +148,7 @@ void showDirectMessageDialog(BuildContext context, String recipientName) {
               const SnackBar(content: Text('تم إرسال الرسالة إلى صندوق بريد الموهبة بنجاح ✅'), backgroundColor: Colors.green),
             );
           },
-          child: const Text('إلغاء', style: TextStyle(color: Colors.white)),
+          child: const Text('إرسال 🚀', style: TextStyle(color: Colors.white)),
         ),
       ],
     ),
