@@ -17,7 +17,7 @@ class TalentMessagesScreen extends StatelessWidget {
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
-            .collection('inbox')
+            .collection('talent_direct_messages') // تم فصلها عن شات الراديو تماماً
             .where('receiver', isEqualTo: talentName.trim())
             .snapshots(),
         builder: (context, snapshot) {
