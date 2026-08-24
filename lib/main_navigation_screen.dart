@@ -7,64 +7,6 @@ import 'dart:convert';
 import 'talent_model.dart';
 import 'talent_messages_screen.dart';
 
-// دالة إرسال رسالة مباشرة لأي موهبة من الدليل
-void showDirectMessageDialog(BuildContext context, String receiverName) {
-  final TextEditingController senderController = TextEditingController();
-  final TextEditingController messageController = TextEditingController();
-
-  showDialog(
-    context: context,
-    builder: (context) => AlertDialog(
-      title: Text('إرسال رسالة إلى: $receiverName ✉️', style: const TextStyle(color: Color(0xFF7B1FA2), fontWeight: FontWeight.bold)),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: senderController,
-            decoration: const InputDecoration(labelText: 'اسمك أو صفتك', border: OutlineInputBorder()),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: messageController,
-            maxLines: 3,
-            decoration: const InputDecoration(labelText: 'نص الرسالة...', border: OutlineInputBorder()),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('إلغاء', style: TextStyle(color: Colors.grey)),
-        ),
-        ElevatedButton(
-          style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7B1FA2)),
-          onPressed: () async {
-            if (senderController.text.trim().isNotEmpty && messageController.text.trim().isNotEmpty) {
-              await FirebaseFirestore.instance.collection('inbox').add({
-                'sender': senderController.text.trim(),
-                'receiver': receiverName.trim(),
-                'text': messageController.text.trim(),
-                'timestamp': FieldValue.serverTimestamp(),
-              });
-
-              if (!context.mounted) return;
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('تم ارسال الرسالة بنجاح للموهبة ✅'), backgroundColor: Colors.green),
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('الرجاء إدخال الاسم ونصوص الرسالة ❌'), backgroundColor: Colors.red),
-              );
-            }
-          },
-          child: const Text('إرسال', style: TextStyle(color: Colors.white)),
-        ),
-      ],
-    ),
-  );
-}
-
 class MainNavigationScreen extends StatefulWidget {
   const MainNavigationScreen({super.key});
 
@@ -749,17 +691,9 @@ Widget buildTalentListWithAllWorks(BuildContext context, String categoryKeyword,
           padding: const EdgeInsets.all(16.0),
           itemCount: docs.length,
           itemBuilder: (context, index) {
-            var data = docs[index].data() as Map<String, dynamic>;
-            var talent = TalentModel(
-              name: data['name'] ?? '',
-              category: data['category'] ?? '',
-              bio: data['description'] ?? '',
-              phone: data['transactionRef'] ?? '',
-              email: data['email'] ?? '',
-              password: data['password'] ?? '',
-              profileImage: data['profileImage'] ?? '',
-              isApproved: data['isApproved'] ?? false,
-            );
+            var doc = docs[index];
+            var data = doc.data() as Map<String, dynamic>;
+            var talent = TalentModel.fromMap(data, doc.id);
 
             return StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -785,26 +719,54 @@ Widget buildTalentListWithAllWorks(BuildContext context, String categoryKeyword,
                   elevation: 2,
                   color: Colors.white,
                   margin: const EdgeInsets.only(bottom: 12),
-                  child: ListTile(
-                    leading: Icon(icon, color: const Color(0xFF7B1FA2)),
-                    title: Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 4.0),
-                      child: Text(
-                        worksText, 
-                        maxLines: 2, 
-                        overflow: TextOverflow.ellipsis, 
-                        style: const TextStyle(color: Colors.purple, fontSize: 13),
-                      ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(icon, color: const Color(0xFF7B1FA2)),
+                                const SizedBox(width: 8),
+                                Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                              ],
+                            ),
+                            Text(talent.category, style: const TextStyle(color: Color(0xFF7B1FA2), fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Text(worksText, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.purple, fontSize: 13)),
+                        const Divider(height: 16),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF7B1FA2),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              ),
+                              icon: const Icon(Icons.mail, size: 14, color: Colors.white),
+                              label: const Text('مراسلة الموهبة ✉️', style: TextStyle(color: Colors.white, fontSize: 11)),
+                              onPressed: () => showDirectMessageDialog(context, talent.name),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Color(0xFF7B1FA2)),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              ),
+                              onPressed: () {
+                                Navigator.push(context, MaterialPageRoute(builder: (context) => TalentDetailScreen(talent: talent, icon: icon)));
+                              },
+                              child: const Text('التفاصيل 📖', style: TextStyle(color: Color(0xFF7B1FA2), fontSize: 11)),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.mail, color: Color(0xFF7B1FA2)),
-                      tooltip: 'مراسلة الموهبة',
-                      onPressed: () => showDirectMessageDialog(context, talent.name),
-                    ),
-                    onTap: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => TalentDetailScreen(talent: talent, icon: icon)));
-                    },
                   ),
                 );
               },
@@ -886,16 +848,7 @@ class GuideScreen extends StatelessWidget {
               const SizedBox(height: 12),
               ...docs.map((doc) {
                 var data = doc.data() as Map<String, dynamic>;
-                var talent = TalentModel(
-                  name: data['name'] ?? '',
-                  category: data['category'] ?? '',
-                  bio: data['description'] ?? '',
-                  phone: data['transactionRef'] ?? '',
-                  email: data['email'] ?? '',
-                  password: data['password'] ?? '',
-                  profileImage: data['profileImage'] ?? '',
-                  isApproved: data['isApproved'] ?? false,
-                );
+                var talent = TalentModel.fromMap(data, doc.id);
 
                 return StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
