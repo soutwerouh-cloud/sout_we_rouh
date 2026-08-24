@@ -913,7 +913,6 @@ class GuideScreen extends StatelessWidget {
 
                     String worksText = workTitles.isNotEmpty ? 'الأعمال: ${workTitles.join(' - ')}' : 'لا توجد أعمال';
 
-                    // الحل المضمون والصريح تماماً: بطاقة تحتوي على اسم الموهبة، القسم، وأزرار واضحة
                     return Card(
                       color: Colors.white,
                       elevation: 2,
