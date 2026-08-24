@@ -913,35 +913,61 @@ class GuideScreen extends StatelessWidget {
 
                     String worksText = workTitles.isNotEmpty ? 'الأعمال: ${workTitles.join(' - ')}' : 'لا توجد أعمال';
 
+                    // الحل المضمون والصريح تماماً: بطاقة تحتوي على اسم الموهبة، القسم، وأزرار واضحة
                     return Card(
                       color: Colors.white,
-                      margin: const EdgeInsets.only(bottom: 10),
-                      child: ListTile(
-                        title: Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(worksText, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.purple, fontSize: 13)),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
+                      elevation: 2,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            IconButton(
-                              icon: const Icon(Icons.mail, color: Color(0xFF7B1FA2)),
-                              tooltip: 'مراسلة الموهبة',
-                              onPressed: () => showDirectMessageDialog(context, talent.name),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.black87)),
+                                Text(talent.category, style: const TextStyle(color: Color(0xFF7B1FA2), fontWeight: FontWeight.bold, fontSize: 14)),
+                              ],
                             ),
-                            const SizedBox(width: 4),
-                            Text(talent.category, style: const TextStyle(color: Color(0xFF7B1FA2), fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 6),
+                            Text(worksText, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.purple, fontSize: 13)),
+                            const Divider(height: 20),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF7B1FA2),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  ),
+                                  icon: const Icon(Icons.mail, size: 16, color: Colors.white),
+                                  label: const Text('مراسلة الموهبة ✉️', style: TextStyle(color: Colors.white, fontSize: 12)),
+                                  onPressed: () => showDirectMessageDialog(context, talent.name),
+                                ),
+                                const SizedBox(width: 8),
+                                OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    side: const BorderSide(color: Color(0xFF7B1FA2)),
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                  ),
+                                  onPressed: () {
+                                    Navigator.push(
+                                      context,
+                                      MaterialPageRoute(
+                                        builder: (context) => TalentDetailScreen(
+                                          talent: talent, 
+                                          icon: Icons.menu_book,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                  child: const Text('التفاصيل 📖', style: TextStyle(color: Color(0xFF7B1FA2), fontSize: 12)),
+                                ),
+                              ],
+                            ),
                           ],
                         ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TalentDetailScreen(
-                                talent: talent, 
-                                icon: Icons.menu_book,
-                              ),
-                            ),
-                          );
-                        },
                       ),
                     );
                   },
