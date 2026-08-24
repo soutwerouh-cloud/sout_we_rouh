@@ -5,7 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:audioplayers/audioplayers.dart' as ap;
 import 'dart:convert';
 import 'talent_model.dart';
-import 'talent_messages_screen.dart'; // <-- استيراد صفحة رسائل الموهبة هنا
+import 'talent_messages_screen.dart';
 
 // دالة إرسال رسالة مباشرة لأي موهبة من الدليل
 void showDirectMessageDialog(BuildContext context, String receiverName) {
@@ -477,7 +477,6 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
             ),
             const SizedBox(height: 10),
             
-            // زر صندوق البريد المباشر والبارز للموهبة
             ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF7B1FA2),
@@ -920,93 +919,6 @@ class GuideScreen extends StatelessWidget {
                       child: ListTile(
                         title: Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold)),
                         subtitle: Text(worksText, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.purple, fontSize: 13)),
-                        // تم تفعيل أيقونة المراسلة واسم القسم هنا معاً بوضوح تام
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.mail, color: Color(0xFF7B1FA2)),
-                              tooltip: 'مراسلة الموهبة',
-                              onPressed: () => showDirectMessageDialog(context, talent.name),
-                            ),
-                            const SizedBox(width: 4),
-                            Text(talent.category, style: const TextStyle(color: Color(0xFF7B1FA2), fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => TalentDetailScreen(
-                                talent: talent, 
-                                icon: Icons.menu_book,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                );
-              }),
-            ],
-          );
-        },
-      ),
-    );
-  }
-}
-
-          var docs = snapshot.data!.docs;
-          return ListView(
-            padding: const EdgeInsets.all(16.0),
-            children: [
-              const TextField(
-                decoration: InputDecoration(
-                  hintText: 'ابحث عن اسم موهبة أو عمل...',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
-                  filled: true,
-                  fillColor: Colors.white,
-                ),
-              ),
-              const SizedBox(height: 12),
-              ...docs.map((doc) {
-                var data = doc.data() as Map<String, dynamic>;
-                var talent = TalentModel(
-                  name: data['name'] ?? '',
-                  category: data['category'] ?? '',
-                  bio: data['description'] ?? '',
-                  phone: data['transactionRef'] ?? '',
-                  email: data['email'] ?? '',
-                  password: data['password'] ?? '',
-                  profileImage: data['profileImage'] ?? '',
-                  isApproved: data['isApproved'] ?? false,
-                );
-
-                return StreamBuilder<QuerySnapshot>(
-                  stream: FirebaseFirestore.instance
-                      .collection('artist_works')
-                      .where('artistName', isEqualTo: talent.name.trim())
-                      .snapshots(),
-                  builder: (context, workSnapshot) {
-                    List<String> workTitles = [];
-                    if (workSnapshot.hasData) {
-                      for (var wDoc in workSnapshot.data!.docs) {
-                        var wData = wDoc.data() as Map<String, dynamic>;
-                        if (wData['title'] != null) workTitles.add(wData['title']);
-                      }
-                    }
-
-                    String worksText = workTitles.isNotEmpty ? 'الأعمال: ${workTitles.join(' - ')}' : 'لا توجد أعمال';
-
-                    return Card(
-                      color: Colors.white,
-                      margin: const EdgeInsets.only(bottom: 10),
-                      child: ListTile(
-                        title: Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text(worksText, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.purple, fontSize: 13)),
-                        // تم إضافة أيقونة المراسلة هنا في دليل المواهب
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
