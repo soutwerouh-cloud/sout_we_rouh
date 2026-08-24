@@ -32,7 +32,7 @@ class TalentMessagesScreen extends StatelessWidget {
 
           var messages = snapshot.data!.docs.toList();
 
-          // ترتيب الرسائل برمجياً من الأحدث للأقدم لضمان عدم الحاجة لـ Index في فايربيز
+          // ترتيب الرسائل برمجياً من الأحدث للأقدم
           messages.sort((a, b) {
             var timeA = (a.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
             var timeB = (b.data() as Map<String, dynamic>)['timestamp'] as Timestamp?;
@@ -47,6 +47,12 @@ class TalentMessagesScreen extends StatelessWidget {
               var msgData = messages[index].data() as Map<String, dynamic>;
               String sender = msgData['sender'] ?? 'مجهول';
               String text = msgData['text'] ?? '';
+
+              // استبعاد أي نص طويل جداً أو كود صورة مخزن بالخطأ
+              if (text.startsWith('data:image') || text.length > 500) {
+                text = '[محتوى مرئي أو مرفق]';
+              }
+
               var timestamp = msgData['timestamp'] as Timestamp?;
               String dateStr = timestamp != null
                   ? "${timestamp.toDate().year}/${timestamp.toDate().month}/${timestamp.toDate().day}"
