@@ -4,7 +4,7 @@ plugins {
     id("com.google.gms.google-services")
 }
 
-android {
+configure<com.android.build.gradle.internal.dsl.BaseAppModuleExtension> {
     namespace = "com.example.sout_we_rouh"
     compileSdk = 36
     ndkVersion = flutter.ndkVersion
@@ -17,10 +17,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
-    }
-
-    kotlinOptions {
-        jvmTarget = "17"
     }
 
     defaultConfig {
