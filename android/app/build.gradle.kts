@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.example.sout_we_rouh"
-    compileSdk = 36
+    compileSdk = 35
     ndkVersion = flutter.ndkVersion
 
     lint {
@@ -23,7 +23,7 @@ android {
     defaultConfig {
         applicationId = "com.example.sout_we_rouh"
         minSdk = flutter.minSdkVersion
-        targetSdk = 36
+        targetSdk = 35
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         missingDimensionStrategy("content-type", "text")
