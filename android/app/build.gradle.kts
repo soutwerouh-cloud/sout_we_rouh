@@ -6,7 +6,7 @@ plugins {
 
 android {
     namespace = "com.example.sout_we_rouh"
-    compileSdk = 36
+    compileSdk = 34
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -23,14 +23,9 @@ android {
     defaultConfig {
         applicationId = "com.example.sout_we_rouh"
         minSdk = 21
-        targetSdk = 36
+        targetSdk = 34
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         missingDimensionStrategy("content-type", "text")
-    }
-}
-configurations.all {
-    resolutionStrategy {
-        force("androidx.core:core-ktx:1.13.1")
     }
 }
