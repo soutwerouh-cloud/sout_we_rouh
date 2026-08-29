@@ -258,7 +258,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                       trailing: const Icon(Icons.chat_bubble_outline, size: 16, color: Colors.purple),
                       onTap: () {
                         if (MediaQuery.of(context).size.width < 700) {
-                          Navigator.pop(context); // قفل القائمة الجانبية على الموبايل
+                          Navigator.pop(context); 
                         }
                         _openPrivateChat(memberName);
                       },
@@ -276,6 +276,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final bool isMobile = screenWidth < 700; 
 
@@ -592,10 +593,17 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
 
                       // نوافذ الشات الخاص العائمة
                       ..._activeChatWindows.where((memberName) => !(_minimizedWindows[memberName] ?? false)).map((memberName) {
-                        double boxHeight = 420; 
-                        double boxWidth = 340; 
-                        double safeTop = _windowPositions[memberName]?.dy ?? 20.0;
-                        double safeLeft = _windowPositions[memberName]?.dx ?? 20.0;
+                        double boxHeight = isMobile ? 310 : 420; 
+                        double boxWidth = isMobile ? screenWidth * 0.9 : 340; 
+                        
+                        double defaultTop = 20.0;
+                        double safeTop = _windowPositions[memberName]?.dy ?? defaultTop;
+                        if (keyboardHeight > 0 && safeTop > (screenHeight - keyboardHeight - boxHeight - 40)) {
+                          safeTop = screenHeight - keyboardHeight - boxHeight - 100;
+                          if (safeTop < 10) safeTop = 10;
+                        }
+                        
+                        double safeLeft = _windowPositions[memberName]?.dx ?? (isMobile ? (screenWidth - boxWidth) / 2 : 20.0);
 
                         return Positioned(
                           left: safeLeft,
