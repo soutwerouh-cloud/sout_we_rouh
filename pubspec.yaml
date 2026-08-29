@@ -10,18 +10,18 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  cupertino_icons: ^1.0.8
-  firebase_core: ^3.0.0
-  cloud_firestore: ^5.0.0
-  just_audio: ^0.9.36
-  audioplayers: ^6.0.0
-  image_picker: ^1.0.4
-  emoji_picker_flutter: ^3.0.0
-  record: ^6.0.0
-  url_launcher: ^6.2.5
-  path_provider: ^2.1.2
-  http: ^1.2.0
-
+  cupertino_icons: 1.0.8
+  firebase_core: ^3.15.2
+  cloud_firestore: 5.6.12
+  just_audio: 0.9.46
+  audioplayers: 6.0.0
+  image_picker: 1.0.4
+  emoji_picker_flutter: ^3.1.0
+  record: 6.2.1
+  url_launcher: 6.2.5
+  path_provider: 2.1.2
+  http: ^1.2.0        
+  web: ^1.0.0         
   file_picker: ^8.1.2
 
 dev_dependencies:
