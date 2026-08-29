@@ -26,6 +26,7 @@ class ChatRadioScreen extends StatefulWidget {
 }
 
 class _ChatRadioScreenState extends State<ChatRadioScreen> {
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late final RadioPlayerManager _radioManager;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   late String activeUserName;
@@ -193,17 +194,97 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     setState(() => _minimizedWindows[memberName] = !(_minimizedWindows[memberName] ?? false));
   }
 
+  Widget _buildTalentsSidebar() {
+    return Container(
+      width: 250,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(left: BorderSide(color: Colors.grey.shade300)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            color: Colors.purple.shade100,
+            child: const Row(
+              children: [
+                Icon(Icons.people, color: Colors.purple, size: 20),
+                SizedBox(width: 8),
+                Text("قائمة الأعضاء والمواهب", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.purple, fontSize: 13)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: _firestore.collection('talents').where('isApproved', isEqualTo: true).snapshots(),
+              builder: (context, snapshot) {
+                final memberDocs = snapshot.hasData ? snapshot.data!.docs : [];
+
+                return ListView.builder(
+                  itemCount: memberDocs.length,
+                  itemBuilder: (context, index) {
+                    final memberData = memberDocs[index].data() as Map<String, dynamic>;
+                    final memberName = memberData["name"] ?? "مستخدم";
+                    final talentType = memberData["talentType"] ?? "موهبة جديدة";
+                    final bool isOnline = memberData["isOnline"] == true;
+
+                    if (memberName == activeUserName) return const SizedBox.shrink();
+
+                    return ListTile(
+                      leading: Stack(
+                        children: [
+                          CircleAvatar(
+                            backgroundColor: Colors.purple.shade200,
+                            child: Text(memberName.isNotEmpty ? memberName[0] : "", style: const TextStyle(color: Colors.white)),
+                          ),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              width: 12,
+                              height: 12,
+                              decoration: BoxDecoration(
+                                color: isOnline ? Colors.green : Colors.grey,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.white, width: 2),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      title: Text(memberName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      subtitle: Text(talentType, style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                      trailing: const Icon(Icons.chat_bubble_outline, size: 16, color: Colors.purple),
+                      onTap: () {
+                        if (MediaQuery.of(context).size.width < 700) {
+                          Navigator.pop(context); // قفل القائمة الجانبية على الموبايل
+                        }
+                        _openPrivateChat(memberName);
+                      },
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final bool isMobile = screenWidth < 700; 
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
+        key: _scaffoldKey,
         resizeToAvoidBottomInset: false,
+        endDrawer: isMobile ? Drawer(child: _buildTalentsSidebar()) : null,
         appBar: AppBar(
           title: Row(
             children: [
@@ -259,7 +340,6 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
           ],
         ),
         
-        // الشريط السفلي لتجمع المحادثات المصغرة منها وتفتح بضغطة
         bottomNavigationBar: _activeChatWindows.any((name) => _minimizedWindows[name] == true)
             ? Container(
                 color: Colors.purple.shade900,
@@ -334,78 +414,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                     children: [
                       Row(
                         children: [
-                          if (!isMobile)
-                            Container(
-                              width: 250,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                border: Border(left: BorderSide(color: Colors.grey.shade300)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(12),
-                                    color: Colors.purple.shade100,
-                                    child: const Row(
-                                      children: [
-                                        Icon(Icons.people, color: Colors.purple, size: 20),
-                                        SizedBox(width: 8),
-                                        Text("قائمة الأعضاء والمواهب", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.purple, fontSize: 13)),
-                                      ],
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: StreamBuilder<QuerySnapshot>(
-                                      stream: _firestore.collection('talents').where('isApproved', isEqualTo: true).snapshots(),
-                                      builder: (context, snapshot) {
-                                        final memberDocs = snapshot.hasData ? snapshot.data!.docs : [];
-
-                                        return ListView.builder(
-                                          itemCount: memberDocs.length,
-                                          itemBuilder: (context, index) {
-                                            final memberData = memberDocs[index].data() as Map<String, dynamic>;
-                                            final memberName = memberData["name"] ?? "مستخدم";
-                                            final talentType = memberData["talentType"] ?? "موهبة جديدة";
-                                            final bool isOnline = memberData["isOnline"] == true;
-
-                                            if (memberName == activeUserName) return const SizedBox.shrink();
-
-                                            return ListTile(
-                                              leading: Stack(
-                                                children: [
-                                                  CircleAvatar(
-                                                    backgroundColor: Colors.purple.shade200,
-                                                    child: Text(memberName.isNotEmpty ? memberName[0] : "", style: const TextStyle(color: Colors.white)),
-                                                  ),
-                                                  Positioned(
-                                                    bottom: 0,
-                                                    right: 0,
-                                                    child: Container(
-                                                      width: 12,
-                                                      height: 12,
-                                                      decoration: BoxDecoration(
-                                                        color: isOnline ? Colors.green : Colors.grey,
-                                                        shape: BoxShape.circle,
-                                                        border: Border.all(color: Colors.white, width: 2),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              title: Text(memberName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                                              subtitle: Text(talentType, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                                              trailing: const Icon(Icons.chat_bubble_outline, size: 16, color: Colors.purple),
-                                              onTap: () => _openPrivateChat(memberName),
-                                            );
-                                          },
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
+                          if (!isMobile) _buildTalentsSidebar(),
 
                           // الشات العام
                           Expanded(
@@ -417,10 +426,34 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                                     padding: const EdgeInsets.all(6),
                                     color: Colors.purple.shade50,
                                     width: double.infinity,
-                                    child: const Text(
-                                      "غرفة [ الشات العام ] - للمشتركين فقط",
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(fontSize: 12, color: Colors.purple, fontWeight: FontWeight.bold),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        const Text(
+                                          "غرفة [ الشات العام ] - للمشتركين فقط",
+                                          style: TextStyle(fontSize: 12, color: Colors.purple, fontWeight: FontWeight.bold),
+                                        ),
+                                        if (isMobile) ...[
+                                          const SizedBox(width: 10),
+                                          InkWell(
+                                            onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
+                                            child: Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                              decoration: BoxDecoration(
+                                                color: Colors.purple.shade700,
+                                                borderRadius: BorderRadius.circular(6),
+                                              ),
+                                              child: const Row(
+                                                children: [
+                                                  Icon(Icons.people, size: 14, color: Colors.white),
+                                                  SizedBox(width: 4),
+                                                  Text("الأعضاء", style: TextStyle(color: Colors.white, fontSize: 11)),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
+                                        ]
+                                      ],
                                     ),
                                   ),
                                   Expanded(
@@ -557,7 +590,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                         ],
                       ),
 
-                      // نوافذ الشات الخاص (تظهر فقط إذا لم تكن مصغرة)
+                      // نوافذ الشات الخاص العائمة
                       ..._activeChatWindows.where((memberName) => !(_minimizedWindows[memberName] ?? false)).map((memberName) {
                         double boxHeight = 420; 
                         double boxWidth = 340; 
