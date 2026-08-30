@@ -1,6 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+// دالة تنظيف الرسائل الخاصة بالمواهب (الاحتفاظ بآخر 30 رسالة لكل مستخدم وحذف الباقي تلقائياً)
+Future<void> _cleanupTalentDirectMessages(String senderName, String recipientName) async {
+  try {
+    var snapshot = await FirebaseFirestore.instance
+        .collection('talent_direct_messages')
+        .orderBy('timestamp', descending: true)
+        .get();
+
+    var conversationDocs = snapshot.docs.where((doc) {
+      final data = doc.data();
+      String sender = data['sender'] ?? '';
+      String receiver = data['receiver'] ?? '';
+      return (sender == senderName && receiver == recipientName) ||
+             (sender == recipientName && receiver == senderName);
+    }).toList();
+
+    if (conversationDocs.length > 30) {
+      for (int i = 30; i < conversationDocs.length; i++) {
+        await conversationDocs[i].reference.delete();
+      }
+    }
+  } catch (e) {
+    debugPrint("خطأ تنظيف رسائل المواهب المباشرة: $e");
+  }
+}
+
 // دالة إرسال رسالة مباشرة مخصصة للمشتركين والمواهب المفعلة فقط مع التحقق من الحساب وكلمة المرور
 void showDirectMessageDialog(BuildContext context, String recipientName) {
   final TextEditingController senderNameController = TextEditingController();
@@ -50,6 +76,7 @@ void showDirectMessageDialog(BuildContext context, String recipientName) {
             String senderName = senderNameController.text.trim();
             String senderPass = senderPasswordController.text.trim();
             String msg = messageController.text.trim();
+            String recipientClean = recipientName.trim();
 
             if (senderName.isEmpty || senderPass.isEmpty || msg.isEmpty) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -92,13 +119,16 @@ void showDirectMessageDialog(BuildContext context, String recipientName) {
             // الإرسال الناجح باسم الموهبة الحقيقية وفي الكوليكشن المنفصل الخاص بالمواهب
             await FirebaseFirestore.instance.collection('talent_direct_messages').add({
               "sender": senderName,
-              "receiver": recipientName.trim(),
+              "receiver": recipientClean,
               "text": msg,
               "isImage": false,
               "isVoice": false,
               "isRead": false,
               "timestamp": FieldValue.serverTimestamp(),
             });
+
+            // تفعيل التنظيف التلقائي للحفاظ على أحدث 30 رسالة للمحادثة فقط
+            await _cleanupTalentDirectMessages(senderName, recipientClean);
 
             if (!context.mounted) return;
             Navigator.pop(context);

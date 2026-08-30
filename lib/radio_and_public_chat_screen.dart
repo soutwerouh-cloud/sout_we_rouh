@@ -71,6 +71,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     super.dispose();
   }
 
+  // دالة تنظيف الشات العام (الاحتفاظ بآخر 30 رسالة وحذف الباقي من الفايربيس تلقائياً)
   Future<void> _cleanupPublicMessages() async {
     try {
       var snapshot = await _firestore.collection('messages').orderBy('timestamp', descending: true).get();
@@ -84,6 +85,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     }
   }
 
+  // دالة تنظيف الشات الخاص بين المستخدم ومستخدم آخر (الاحتفاظ بآخر 30 رسالة فقط)
   Future<void> _cleanupPrivateMessages(String otherUser) async {
     try {
       var snapshot = await _firestore.collection('inbox')
@@ -158,7 +160,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
         "isVoice": false,
         "timestamp": FieldValue.serverTimestamp(),
       });
-      _cleanupPublicMessages();
+      _cleanupPublicMessages(); // تفعيل الحذف التلقائي للشات العام
       
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -655,7 +657,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                                         "isRead": false,
                                         "timestamp": FieldValue.serverTimestamp(),
                                       });
-                                      _cleanupPrivateMessages(memberName);
+                                      _cleanupPrivateMessages(memberName); // تفعيل الحذف التلقائي للخاص
                                     },
                                     onPickImage: () async {
                                       await MediaHandlers.pickAndSendImage((path, isImg) async {
