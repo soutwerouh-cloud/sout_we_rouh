@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:audio_session/audio_session.dart';
-import 'dart:math';
 
 class RadioPlayerManager {
   final AudioPlayer player = AudioPlayer();
@@ -53,15 +52,13 @@ class RadioPlayerManager {
     {"title": "7kety_m3_ezman", "url": "https://github.com/soutwerouh-cloud/sout_we_rouh/raw/refs/heads/main/7kety_m3_ezman.mp3"},
   ];
 
-  void shufflePlaylist() {
-    playlist.shuffle(Random());
-  }
+  bool _isInitializing = false;
 
   Future<void> initAudio(Function onStateChanged) async {
+    if (_isInitializing) return;
+    _isInitializing = true;
+
     try {
-      shufflePlaylist();
-      currentSongIndex = 0;
-      
       final session = await AudioSession.instance;
       await session.configure(const AudioSessionConfiguration.music());
 
@@ -71,12 +68,18 @@ class RadioPlayerManager {
         }
       });
 
+      // خلط القائمة عشوائياً عند البداية لتوزيع أغاني مي محمود بسلاسة
+      playlist.shuffle();
+
+      currentSongIndex = 0;
       await player.setUrl(playlist[currentSongIndex]["url"]!, preload: true);
-      player.play();
+      await player.play();
       isPlaying = true;
       onStateChanged();
     } catch (e) {
-      debugPrint("خطأ في تشغيل الراديو: $e");
+      debugPrint("Error: $e");
+    } finally {
+      _isInitializing = false;
     }
   }
 
@@ -85,21 +88,21 @@ class RadioPlayerManager {
       currentSongIndex = index;
       await player.stop();
       await player.setUrl(playlist[currentSongIndex]["url"]!, preload: true);
-      player.play();
+      await player.play();
       isPlaying = true;
       onStateChanged();
     } catch (e) {
-      debugPrint("خطأ في تشغيل الأغنية: $e");
+      debugPrint("Error: $e");
     }
   }
 
   Future<void> playNext(Function onStateChanged) async {
-    int nextIndex = Random().nextInt(playlist.length);
+    int nextIndex = (currentSongIndex + 1) % playlist.length;
     await _playSongAtIndex(nextIndex, onStateChanged);
   }
 
   Future<void> playPrevious(Function onStateChanged) async {
-    int prevIndex = Random().nextInt(playlist.length);
+    int prevIndex = (currentSongIndex - 1 < 0) ? playlist.length - 1 : currentSongIndex - 1;
     await _playSongAtIndex(prevIndex, onStateChanged);
   }
 
