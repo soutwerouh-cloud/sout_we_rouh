@@ -120,176 +120,193 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      children: [
-        // شريط العنوان العلوي للشات الخاص مع تصميم واضح جداً لزر التصغير
-        Container(
-          height: 40,
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          decoration: BoxDecoration(
-            color: Colors.purple.shade700,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              // أزرار التصغير والإغلاق على اليمين بتصميم بارز
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.yellow.shade700,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.remove, color: Colors.black, size: 16),
-                      onPressed: widget.onMinimize,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                      tooltip: 'تصغير',
-                    ),
-                  ),
-                  const SizedBox(width: 6),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade600,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: IconButton(
-                      icon: const Icon(Icons.close, color: Colors.white, size: 16),
-                      onPressed: widget.onClose,
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
-                      tooltip: 'إغلاق',
-                    ),
-                  ),
-                ],
-              ),
-              // اسم الشخص والأيقونة على اليسار
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 170,
-                    child: Text(
-                      widget.memberName, 
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.right,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(Icons.chat_bubble, color: Colors.white, size: 14),
-                ],
-              ),
-            ],
-          ),
-        ),
-        
-        // محتوى الرسائل
-        Expanded(
-          child: Container(
-            color: Colors.grey.shade100,
-            child: ListView.builder(
-              controller: _scrollController,
-              padding: const EdgeInsets.all(8),
-              itemCount: widget.messages.length,
-              itemBuilder: (context, index) {
-                final msg = widget.messages[index];
-                final isMe = msg['sender'] == widget.currentUserName;
-                final bool isVoice = msg['isVoice'] == true;
-                final String textVal = msg['text'] ?? "";
-                final bool isPlayingThis = (_currentlyPlayingVoiceUrl == textVal);
+    final screenSize = MediaQuery.of(context).size;
 
-                var timestamp = msg['timestamp'] as Timestamp?;
-                String dateStr = 'منذ قليل';
-                if (timestamp != null) {
-                  DateTime dt = timestamp.toDate();
-                  String hour = dt.hour > 12 ? '${dt.hour - 12}' : '${dt.hour == 0 ? 12 : dt.hour}';
-                  String minute = dt.minute.toString().padLeft(2, '0');
-                  String period = dt.hour >= 12 ? 'م' : 'ص';
-                  dateStr = '${dt.year}/${dt.month}/${dt.day} - $hour:$minute $period';
-                }
-
-                return Align(
-                  alignment: isMe ? Alignment.centerLeft : Alignment.centerRight,
-                  child: Container(
-                    margin: const EdgeInsets.symmetric(vertical: 3),
-                    padding: const EdgeInsets.all(8),
-                    constraints: const BoxConstraints(maxWidth: 240),
-                    decoration: BoxDecoration(
-                      color: isMe ? Colors.purple.shade700 : Colors.white,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 1)],
+    return Container(
+      constraints: BoxConstraints(
+        maxHeight: screenSize.height * 0.6,
+        maxWidth: screenSize.width > 500 ? 380 : screenSize.width * 0.92,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+        boxShadow: const [
+          BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, -2))
+        ],
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // شريط العنوان العلوي للشات الخاص مع تصميم واضح جداً لزر التصغير
+          Container(
+            height: 40,
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: Colors.purple.shade700,
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(11)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // أزرار التصغير والإغلاق على اليمين بتصميم بارز
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.yellow.shade700,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.remove, color: Colors.black, size: 16),
+                        onPressed: widget.onMinimize,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                        tooltip: 'تصغير',
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        isVoice
-                            ? Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(
-                                    icon: Icon(
-                                      isPlayingThis ? Icons.pause_circle_filled : Icons.play_circle_fill,
-                                      color: Colors.greenAccent,
-                                      size: 26,
-                                    ),
-                                    onPressed: () => _playVoiceMessage(textVal),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(),
-                                  ),
-                                  const SizedBox(width: 6),
-                                  Text(
-                                    isPlayingThis ? "جاري التشغيل... 🔊" : "تسجيل صوتي 🎤",
-                                    style: TextStyle(fontSize: 12, color: isMe ? Colors.white : Colors.black87),
-                                  ),
-                                ],
-                              )
-                            : (msg['isImage'] == true
-                                ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(6),
-                                    child: InkWell(
-                                      onTap: () => MediaHandlers.showImageDialog(context, base64Decode(textVal.split(',').last)),
-                                      child: Image.memory(
-                                        base64Decode(textVal.split(',').last),
-                                        width: 120,
-                                        height: 120,
-                                        fit: BoxFit.cover,
-                                      ),
-                                    ),
-                                  )
-                                : Text(textVal, style: TextStyle(fontSize: 13, color: isMe ? Colors.white : Colors.black87))),
-                        const SizedBox(height: 4),
-                        Align(
-                          alignment: Alignment.bottomLeft,
-                          child: Text(
-                            dateStr,
-                            style: TextStyle(fontSize: 9, color: isMe ? Colors.white60 : Colors.grey),
-                          ),
-                        ),
-                      ],
+                    const SizedBox(width: 6),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade600,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white, size: 16),
+                        onPressed: widget.onClose,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                        tooltip: 'إغلاق',
+                      ),
                     ),
-                  ),
-                );
-              },
+                  ],
+                ),
+                // اسم الشخص والأيقونة على اليسار
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 170,
+                      child: Text(
+                        widget.memberName, 
+                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.right,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    const Icon(Icons.chat_bubble, color: Colors.white, size: 14),
+                  ],
+                ),
+              ],
             ),
           ),
-        ),
+          
+          // محتوى الرسائل
+          Flexible(
+            child: Container(
+              color: Colors.grey.shade100,
+              child: ListView.builder(
+                controller: _scrollController,
+                shrinkWrap: true,
+                padding: const EdgeInsets.all(8),
+                itemCount: widget.messages.length,
+                itemBuilder: (context, index) {
+                  final msg = widget.messages[index];
+                  final isMe = msg['sender'] == widget.currentUserName;
+                  final bool isVoice = msg['isVoice'] == true;
+                  final String textVal = msg['text'] ?? "";
+                  final bool isPlayingThis = (_currentlyPlayingVoiceUrl == textVal);
 
-        // شريط الإدخال السفلي للشات الخاص
-        ChatInputControllerWidget(
-          textController: _messageController,
-          onSendText: _sendTextMessage,
-          onPickImage: widget.onPickImage,
-          onSendVoice: (audioData) {
-            widget.onSend(audioData, false, true);
-            WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-          },
-        ),
-      ],
+                  var timestamp = msg['timestamp'] as Timestamp?;
+                  String dateStr = 'منذ قليل';
+                  if (timestamp != null) {
+                    DateTime dt = timestamp.toDate();
+                    String hour = dt.hour > 12 ? '${dt.hour - 12}' : '${dt.hour == 0 ? 12 : dt.hour}';
+                    String minute = dt.minute.toString().padLeft(2, '0');
+                    String period = dt.hour >= 12 ? 'م' : 'ص';
+                    dateStr = '${dt.year}/${dt.month}/${dt.day} - $hour:$minute $period';
+                  }
+
+                  return Align(
+                    alignment: isMe ? Alignment.centerLeft : Alignment.centerRight,
+                    child: Container(
+                      margin: const EdgeInsets.symmetric(vertical: 3),
+                      padding: const EdgeInsets.all(8),
+                      constraints: const BoxConstraints(maxWidth: 240),
+                      decoration: BoxDecoration(
+                        color: isMe ? Colors.purple.shade700 : Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 1)],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          isVoice
+                              ? Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(
+                                        isPlayingThis ? Icons.pause_circle_filled : Icons.play_circle_fill,
+                                        color: Colors.greenAccent,
+                                        size: 26,
+                                      ),
+                                      onPressed: () => _playVoiceMessage(textVal),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Text(
+                                      isPlayingThis ? "جاري التشغيل... 🔊" : "تسجيل صوتي 🎤",
+                                      style: TextStyle(fontSize: 12, color: isMe ? Colors.white : Colors.black87),
+                                    ),
+                                  ],
+                                )
+                              : (msg['isImage'] == true
+                                  ? ClipRRect(
+                                      borderRadius: BorderRadius.circular(6),
+                                      child: InkWell(
+                                        onTap: () => MediaHandlers.showImageDialog(context, base64Decode(textVal.split(',').last)),
+                                        child: Image.memory(
+                                          base64Decode(textVal.split(',').last),
+                                          width: 120,
+                                          height: 120,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    )
+                                  : Text(textVal, style: TextStyle(fontSize: 13, color: isMe ? Colors.white : Colors.black87))),
+                          const SizedBox(height: 4),
+                          Align(
+                            alignment: Alignment.bottomLeft,
+                            child: Text(
+                              dateStr,
+                              style: TextStyle(fontSize: 9, color: isMe ? Colors.white60 : Colors.grey),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+
+          // شريط الإدخال السفلي للشات الخاص
+          ChatInputControllerWidget(
+            textController: _messageController,
+            onSendText: _sendTextMessage,
+            onPickImage: widget.onPickImage,
+            onSendVoice: (audioData) {
+              widget.onSend(audioData, false, true);
+              WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+            },
+          ),
+        ],
+      ),
     );
   }
 }

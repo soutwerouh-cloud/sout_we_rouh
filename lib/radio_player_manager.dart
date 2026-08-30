@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:audio_session/audio_session.dart';
 import 'dart:math';
 
 class RadioPlayerManager {
@@ -61,7 +62,9 @@ class RadioPlayerManager {
       shufflePlaylist();
       currentSongIndex = 0;
       
-      // الاستماع لانتهاء الأغنية الحالية والانتقال تلقائياً لأغنية عشوائية جديدة
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+
       player.playerStateStream.listen((state) {
         if (state.processingState == ProcessingState.completed) {
           playNext(onStateChanged);

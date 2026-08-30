@@ -172,21 +172,23 @@ class _ChatInputControllerWidgetState extends State<ChatInputControllerWidget> {
                 Expanded(
                   child: SizedBox(
                     height: 38,
-                    child: TextField(
-                      controller: widget.textController,
-                      focusNode: _textFieldFocusNode,
-                      autofocus: false,
-                      onSubmitted: (_) {
-                        widget.onSendText();
-                        FocusScope.of(context).requestFocus(_textFieldFocusNode);
-                      },
-                      decoration: InputDecoration(
-                        hintText: _isRecording ? "جاري التسجيل... اضغط المربع للإيقاف" : "اكتب رسالة...",
-                        hintStyle: TextStyle(fontSize: 11, color: _isRecording ? Colors.red : Colors.grey),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
-                        filled: true,
-                        fillColor: Colors.grey.shade100,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                    child: RepaintBoundary(
+                      child: TextField(
+                        controller: widget.textController,
+                        focusNode: _textFieldFocusNode,
+                        autofocus: false,
+                        onSubmitted: (_) {
+                          widget.onSendText();
+                          FocusScope.of(context).requestFocus(_textFieldFocusNode);
+                        },
+                        decoration: InputDecoration(
+                          hintText: "اكتب رسالة...",
+                          hintStyle: const TextStyle(fontSize: 11, color: Colors.grey),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(20), borderSide: BorderSide.none),
+                          filled: true,
+                          fillColor: Colors.grey.shade100,
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                        ),
                       ),
                     ),
                   ),
