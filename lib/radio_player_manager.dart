@@ -86,6 +86,10 @@ class RadioPlayerManager {
     try {
       currentSongIndex = index;
       await player.stop();
+      
+      // مهلة بسيطة لفك حظر المتصفح على الويب وتحديث الصوت والاسم معاً
+      await Future.delayed(const Duration(milliseconds: 100));
+
       await player.setUrl(playlist[currentSongIndex]["url"]!, preload: true);
       await player.play();
       isPlaying = true;
