@@ -4,6 +4,7 @@ import 'package:audio_session/audio_session.dart';
 
 class RadioPlayerManager {
   final AudioPlayer player = AudioPlayer();
+  late ConcatenatingAudioSource _playlistSource;
   bool isPlaying = false;
   int currentSongIndex = 0;
 
@@ -62,17 +63,29 @@ class RadioPlayerManager {
       final session = await AudioSession.instance;
       await session.configure(const AudioSessionConfiguration.music());
 
-      player.playerStateStream.listen((state) {
-        if (state.processingState == ProcessingState.completed) {
-          playNext(onStateChanged);
+      // خلط القائمة عشوائياً
+      playlist.shuffle();
+
+      // إنشاء قائمة تشغيل متصلة (ConcatenatingAudioSource) لضمان التشغيل المتتالي بسلاسة على الويب
+      _playlistSource = ConcatenatingAudioSource(
+        children: playlist.map((song) => AudioSource.uri(Uri.parse(song["url"]!))).toList(),
+      );
+
+      // الاستماع لتغير الأغنية الحالية أوتوماتيكياً عبر المشغل
+      player.currentIndexStream.listen((index) {
+        if (index != null) {
+          currentSongIndex = index;
+          onStateChanged();
         }
       });
 
-      // خلط القائمة عشوائياً عند البداية لتوزيع أغاني مي محمود بسلاسة
-      playlist.shuffle();
+      player.playerStateStream.listen((state) {
+        if (state.processingState == ProcessingState.completed) {
+          // المشغل سينتقل تلقائياً للأغنية التالية عبر الـ ConcatenatingAudioSource
+        }
+      });
 
-      currentSongIndex = 0;
-      await player.setUrl(playlist[currentSongIndex]["url"]!, preload: true);
+      await player.setAudioSource(_playlistSource, initialIndex: 0);
       await player.play();
       isPlaying = true;
       onStateChanged();
@@ -86,8 +99,7 @@ class RadioPlayerManager {
   Future<void> _playSongAtIndex(int index, Function onStateChanged) async {
     try {
       currentSongIndex = index;
-      await player.stop();
-      await player.setUrl(playlist[currentSongIndex]["url"]!, preload: true);
+      await player.seek(Duration.zero, index: index);
       await player.play();
       isPlaying = true;
       onStateChanged();
