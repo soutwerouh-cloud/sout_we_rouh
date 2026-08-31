@@ -36,6 +36,8 @@ class TalentWorksListWidget extends StatelessWidget {
               : 'منذ قليل';
 
           bool isPlaying = currentlyPlayingWorkId == workDoc.id;
+          // التحقق هل العمل يحتوي على فويس (صوت) أم نص شعر كتابي فقط
+          bool hasAudio = audioUrl != null && audioUrl.isNotEmpty;
 
           return Center(
             child: SizedBox(
@@ -80,38 +82,34 @@ class TalentWorksListWidget extends StatelessWidget {
                                 onPressed: () => onEditWork(workDoc.id, workData['title'], workData['content']),
                               ),
                               const SizedBox(width: 4),
-                              // زر التشغيل والإيقاف الواضح والصريح
-                              InkWell(
-                                onTap: () {
-                                  String targetUrl = '';
-                                  if (audioUrl != null && audioUrl.isNotEmpty) {
-                                    targetUrl = audioUrl;
-                                  } else {
-                                    targetUrl = workData['content'] ?? '';
-                                  }
-                                  onPlayAudio(workDoc.id, targetUrl);
-                                },
-                                child: Padding(
-                                  padding: const EdgeInsets.all(4.0),
-                                  child: Icon(
-                                    isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                                    color: isPlaying ? Colors.red : const Color(0xFF7B1FA2),
-                                    size: 28, // حجم كبير وواضح جداً للعين
+                              // يظهر زر التشغيل فقط لو فيه ملف صوتي حقيقي
+                              if (hasAudio) ...[
+                                InkWell(
+                                  onTap: () {
+                                    onPlayAudio(workDoc.id, audioUrl);
+                                  },
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(4.0),
+                                    child: Icon(
+                                                      isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                                      color: isPlaying ? Colors.red : const Color(0xFF7B1FA2),
+                                      size: 28,
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                         ],
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 6),
+                      // عرض محتوى القصيدة أو النص بالكامل بدون قص
                       Text(
                         workData['content'] ?? '', 
-                        style: const TextStyle(fontSize: 11, color: Colors.black87),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 13, color: Colors.black87),
+                        textAlign: TextAlign.right,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 8),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
