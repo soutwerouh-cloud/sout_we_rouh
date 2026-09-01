@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class PresenceManager {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // تحديث حالة المستخدم إلى متصل وإرسال رسالة ترحيبية فورية
+  // تحديث حالة المستخدم إلى متصل فقط دون إرسال رسائل ثابتة للشات
   static Future<void> setOnline(String userName) async {
     if (userName.isEmpty || userName == "مستخدم") return;
     try {
@@ -20,21 +20,12 @@ class PresenceManager {
           });
         }
       }
-
-      // إرسال رسالة نظام ترحيبية فورية في الشات العام بغض النظر عن مطابقة القائمة
-      await _firestore.collection('messages').add({
-        "sender": "نظام الشات 🤖",
-        "text": "منور الشات يا $userName 👋✨ أهلاً بيك معنا!",
-        "isImage": false,
-        "isVoice": false,
-        "timestamp": FieldValue.serverTimestamp(),
-      });
     } catch (e) {
       debugPrint("خطأ في تحديث الحالة إلى متصل: $e");
     }
   }
 
-  // تحديث حالة المستخدم إلى غير متصل وإرسال رسالة مغادرة
+  // تحديث حالة المستخدم إلى غير متصل فقط دون إرسال رسائل ثابتة للشات
   static Future<void> setOffline(String userName) async {
     if (userName.isEmpty || userName == "مستخدم") return;
     try {
@@ -50,15 +41,6 @@ class PresenceManager {
           });
         }
       }
-
-      // إرسال رسالة نظام تلقائية عند خروج المستخدم
-      await _firestore.collection('messages').add({
-        "sender": "نظام الشات 🤖",
-        "text": "غادر الغرفة $userName 👋 ننتظر عودتك قريبًا 🌸",
-        "isImage": false,
-        "isVoice": false,
-        "timestamp": FieldValue.serverTimestamp(),
-      });
     } catch (e) {
       debugPrint("خطأ في تحديث الحالة إلى غير متصل: $e");
     }
