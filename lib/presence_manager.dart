@@ -4,14 +4,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class PresenceManager {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // تحديث حالة المستخدم إلى متصل وإرسال رسالة ترحيبية في الشات العام
+  // تحديث حالة المستخدم إلى متصل وإرسال رسالة ترحيبية فورية
   static Future<void> setOnline(String userName) async {
     if (userName.isEmpty || userName == "مستخدم") return;
     try {
       String cleanName = userName.trim().toLowerCase();
       var snapshot = await _firestore.collection('talents').get();
       
-      bool updated = false;
       for (var doc in snapshot.docs) {
         String dbName = (doc.data()['name'] ?? '').toString().trim().toLowerCase();
         if (dbName == cleanName) {
@@ -19,26 +18,23 @@ class PresenceManager {
             'isOnline': true,
             'lastSeen': FieldValue.serverTimestamp(),
           });
-          updated = true;
         }
       }
 
-      // إرسال رسالة نظام ترحيبية تلقائية عند دخول المستخدم للشات
-      if (updated || userName.isNotEmpty) {
-        await _firestore.collection('messages').add({
-          "sender": "نظام الشات 🤖",
-          "text": "منور الشات يا $userName 👋✨ أهلاً بيك معنا!",
-          "isImage": false,
-          "isVoice": false,
-          "timestamp": FieldValue.serverTimestamp(),
-        });
-      }
+      // إرسال رسالة نظام ترحيبية فورية في الشات العام بغض النظر عن مطابقة القائمة
+      await _firestore.collection('messages').add({
+        "sender": "نظام الشات 🤖",
+        "text": "منور الشات يا $userName 👋✨ أهلاً بيك معنا!",
+        "isImage": false,
+        "isVoice": false,
+        "timestamp": FieldValue.serverTimestamp(),
+      });
     } catch (e) {
       debugPrint("خطأ في تحديث الحالة إلى متصل: $e");
     }
   }
 
-  // تحديث حالة المستخدم إلى غير متصل وإرسال رسالة مغادرة في الشات العام
+  // تحديث حالة المستخدم إلى غير متصل وإرسال رسالة مغادرة
   static Future<void> setOffline(String userName) async {
     if (userName.isEmpty || userName == "مستخدم") return;
     try {
@@ -55,7 +51,7 @@ class PresenceManager {
         }
       }
 
-      // إرسال رسالة نظام تلقائية عند خروج المستخدم من الشات
+      // إرسال رسالة نظام تلقائية عند خروج المستخدم
       await _firestore.collection('messages').add({
         "sender": "نظام الشات 🤖",
         "text": "غادر الغرفة $userName 👋 ننتظر عودتك قريبًا 🌸",
