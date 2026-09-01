@@ -42,6 +42,10 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
   final ap.AudioPlayer _workAudioPlayer = ap.AudioPlayer();
   String? _currentlyPlayingWorkId;
 
+  // تخزين العمل المحدد حالياً لعرضه في مساحة العرض الرئيسية فوق
+  Map<String, dynamic>? _selectedWorkData;
+  String? _selectedWorkId;
+
   @override
   void initState() {
     super.initState();
@@ -435,6 +439,85 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
               ),
             ),
             const SizedBox(height: 24),
+
+            // **مساحة العرض الرئيسية (Master-Detail View)**: تظهر فوق عند الضغط على أي عمل من القائمة لتشغيله أو قراءته بالكامل
+            if (_selectedWorkData != null) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                margin: const EdgeInsets.only(bottom: 24),
+                decoration: BoxDecoration(
+                  color: Colors.purple.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.purple.shade300, width: 1.5),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(isPoet ? Icons.menu_book : Icons.music_note, color: const Color(0xFF7B1FA2)),
+                            const SizedBox(width: 8),
+                            Text(
+                              _selectedWorkData!['title'] ?? '',
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF7B1FA2)),
+                            ),
+                          ],
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.grey),
+                          onPressed: () {
+                            setState(() {
+                              _selectedWorkData = null;
+                              _selectedWorkId = null;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    // لو القسم شعر، اعرض الكلمات الكاملة بوضوح
+                    if (isPoet && (_selectedWorkData!['content'] ?? '').isNotEmpty) ...[
+                      Text(
+                        _selectedWorkData!['content'],
+                        style: const TextStyle(fontSize: 16, color: Colors.black87, height: 1.8),
+                        textAlign: TextAlign.right,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    // لو القسم غناء/تلحين، اعرض زر التشغيل والمحتوى الصوتي بشكل بارز
+                    if (!isPoet && (_selectedWorkData!['audioUrl'] ?? '').isNotEmpty) ...[
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF7B1FA2),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        ),
+                        onPressed: () {
+                          if (_selectedWorkId != null) {
+                            _playAudioFromUrl(_selectedWorkId!, _selectedWorkData!['audioUrl']);
+                          }
+                        },
+                        icon: Icon(_currentlyPlayingWorkId == _selectedWorkId ? Icons.pause : Icons.play_arrow),
+                        label: Text(_currentlyPlayingWorkId == _selectedWorkId ? 'إيقاف الصوت ⏹' : 'استماع للعمل الصوتي 🎧'),
+                      ),
+                      const SizedBox(height: 12),
+                      if ((_selectedWorkData!['content'] ?? '').isNotEmpty)
+                        Text(
+                          _selectedWorkData!['content'],
+                          style: const TextStyle(fontSize: 14, color: Colors.black54),
+                          textAlign: TextAlign.right,
+                        ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
+
             TalentWorkFormWidget(
               isPoet: isPoet,
               isAuthorized: _isAuthorized,
@@ -482,6 +565,12 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
                   works: works,
                   currentlyPlayingWorkId: _currentlyPlayingWorkId,
                   onPlayAudio: (workId, url) => _playAudioFromUrl(workId, url),
+                  onSelectWork: (workId, workData) {
+                    setState(() {
+                      _selectedWorkId = workId;
+                      _selectedWorkData = workData;
+                    });
+                  },
                   onEditWork: (id, title, content) {
                     _checkPasswordAndExecute(() {
                       _showEditWorkDialog(id, title, content);
@@ -507,6 +596,12 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
 
                       if (confirm == true) {
                         await FirebaseFirestore.instance.collection('artist_works').doc(id).delete();
+                        if (_selectedWorkId == id) {
+                          setState(() {
+                            _selectedWorkData = null;
+                            _selectedWorkId = null;
+                          });
+                        }
                       }
                     });
                   },

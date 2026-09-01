@@ -8,6 +8,7 @@ class TalentWorksListWidget extends StatelessWidget {
   final Function(String workId, String currentTitle, String currentContent) onEditWork;
   final Function(String workId) onDeleteWork;
   final Function(String workId, int currentLikes) onLikeWork;
+  final Function(String workId, Map<String, dynamic> workData) onSelectWork; // دالة إرسال العمل لمساحة العرض الرئيسية فوق
 
   const TalentWorksListWidget({
     super.key,
@@ -17,6 +18,7 @@ class TalentWorksListWidget extends StatelessWidget {
     required this.onEditWork,
     required this.onDeleteWork,
     required this.onLikeWork,
+    required this.onSelectWork,
   });
 
   @override
@@ -36,7 +38,6 @@ class TalentWorksListWidget extends StatelessWidget {
               : 'منذ قليل';
 
           bool isPlaying = currentlyPlayingWorkId == workDoc.id;
-          // التحقق هل العمل يحتوي على فويس (صوت) أم نص شعر كتابي فقط
           bool hasAudio = audioUrl != null && audioUrl.isNotEmpty;
 
           return Center(
@@ -47,87 +48,86 @@ class TalentWorksListWidget extends StatelessWidget {
                 color: Colors.white,
                 margin: const EdgeInsets.only(bottom: 6),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              workData['title'] ?? '', 
-                              textAlign: TextAlign.right,
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF7B1FA2)),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(6),
+                  onTap: () {
+                    // عند الضغط على الكارد، يظهر العمل فوق في مساحة العرض الرئيسية
+                    onSelectWork(workDoc.id, workData);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 8.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                workData['title'] ?? '', 
+                                textAlign: TextAlign.right,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF7B1FA2)),
+                              ),
                             ),
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                icon: const Icon(Icons.delete, color: Colors.red, size: 16),
-                                tooltip: 'حذف العمل',
-                                onPressed: () => onDeleteWork(workDoc.id),
-                              ),
-                              const SizedBox(width: 4),
-                              IconButton(
-                                constraints: const BoxConstraints(),
-                                padding: const EdgeInsets.symmetric(horizontal: 4),
-                                icon: const Icon(Icons.edit, color: Colors.blue, size: 16),
-                                tooltip: 'تعديل العمل',
-                                onPressed: () => onEditWork(workDoc.id, workData['title'], workData['content']),
-                              ),
-                              const SizedBox(width: 4),
-                              // يظهر زر التشغيل فقط لو فيه ملف صوتي حقيقي
-                              if (hasAudio) ...[
-                                InkWell(
-                                  onTap: () {
-                                    onPlayAudio(workDoc.id, audioUrl);
-                                  },
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(4.0),
-                                    child: Icon(
-                                                      isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                                      color: isPlaying ? Colors.red : const Color(0xFF7B1FA2),
-                                      size: 28,
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  constraints: const BoxConstraints(),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  icon: const Icon(Icons.delete, color: Colors.red, size: 16),
+                                  tooltip: 'حذف العمل',
+                                  onPressed: () => onDeleteWork(workDoc.id),
+                                ),
+                                const SizedBox(width: 4),
+                                IconButton(
+                                  constraints: const BoxConstraints(),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                                  icon: const Icon(Icons.edit, color: Colors.blue, size: 16),
+                                  tooltip: 'تعديل العمل',
+                                  onPressed: () => onEditWork(workDoc.id, workData['title'], workData['content']),
+                                ),
+                                const SizedBox(width: 4),
+                                if (hasAudio) ...[
+                                  InkWell(
+                                    onTap: () {
+                                      onPlayAudio(workDoc.id, audioUrl);
+                                    },
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(4.0),
+                                      child: Icon(
+                                        isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                                        color: isPlaying ? Colors.red : const Color(0xFF7B1FA2),
+                                        size: 28,
+                                      ),
                                     ),
                                   ),
-                                ),
+                                ],
                               ],
-                            ],
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      // عرض محتوى القصيدة أو النص بالكامل بدون قص
-                      Text(
-                        workData['content'] ?? '', 
-                        style: const TextStyle(fontSize: 13, color: Colors.black87),
-                        textAlign: TextAlign.right,
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(dateStr, style: const TextStyle(color: Colors.grey, fontSize: 10)),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              InkWell(
-                                onTap: () => onLikeWork(workDoc.id, likes),
-                                child: const Icon(Icons.favorite, color: Colors.red, size: 13),
-                              ),
-                              const SizedBox(width: 3),
-                              Text('$likes إعجاب', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 10)),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ],
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(dateStr, style: const TextStyle(color: Colors.grey, fontSize: 10)),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                InkWell(
+                                  onTap: () => onLikeWork(workDoc.id, likes),
+                                  child: const Icon(Icons.favorite, color: Colors.red, size: 13),
+                                ),
+                                const SizedBox(width: 3),
+                                Text('$likes إعجاب', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 10)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
