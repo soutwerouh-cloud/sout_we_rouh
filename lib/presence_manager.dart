@@ -4,7 +4,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class PresenceManager {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  // تحديث حالة المستخدم إلى متصل فقط دون إرسال رسائل ثابتة للشات
   static Future<void> setOnline(String userName) async {
     if (userName.isEmpty || userName == "مستخدم") return;
     try {
@@ -21,11 +20,10 @@ class PresenceManager {
         }
       }
     } catch (e) {
-      debugPrint("خطأ في تحديث الحالة إلى متصل: $e");
+      debugPrint("خطأ في تحديث الحالة: $e");
     }
   }
 
-  // تحديث حالة المستخدم إلى غير متصل فقط دون إرسال رسائل ثابتة للشات
   static Future<void> setOffline(String userName) async {
     if (userName.isEmpty || userName == "مستخدم") return;
     try {
@@ -42,7 +40,7 @@ class PresenceManager {
         }
       }
     } catch (e) {
-      debugPrint("خطأ في تحديث الحالة إلى غير متصل: $e");
+      debugPrint("خطأ في تحديث الحالة: $e");
     }
   }
 }
