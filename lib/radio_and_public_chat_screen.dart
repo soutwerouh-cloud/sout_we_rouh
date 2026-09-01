@@ -160,7 +160,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
         "isVoice": false,
         "timestamp": FieldValue.serverTimestamp(),
       });
-      _cleanupPublicMessages(); // تفعيل الحذف التلقائي للشات العام
+      _cleanupPublicMessages(); 
       
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
@@ -247,7 +247,8 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                               width: 12,
                               height: 12,
                               decoration: BoxDecoration(
-                                color: isOnline ? Colors.green : Colors.grey,
+                                // ألوان الحالة الزاهية: أخضر زاهي للمتصل وأحمر زاهي لغير المتصل
+                                color: isOnline ? Colors.greenAccent.shade400 : Colors.redAccent.shade200,
                                 shape: BoxShape.circle,
                                 border: Border.all(color: Colors.white, width: 2),
                               ),
@@ -657,7 +658,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                                         "isRead": false,
                                         "timestamp": FieldValue.serverTimestamp(),
                                       });
-                                      _cleanupPrivateMessages(memberName); // تفعيل الحذف التلقائي للخاص
+                                      _cleanupPrivateMessages(memberName); 
                                     },
                                     onPickImage: () async {
                                       await MediaHandlers.pickAndSendImage((path, isImg) async {
