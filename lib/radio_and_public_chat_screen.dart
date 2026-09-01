@@ -47,10 +47,41 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     super.initState();
     activeUserName = widget.currentUserName.isNotEmpty ? widget.currentUserName : "مستخدم";
     PresenceManager.setOnline(activeUserName);
+    
+    // إظهار بانر الترحيب العائم المؤقت أول ما تدخل الشات
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showWelcomeBanner(activeUserName);
+    });
+
     _radioManager = RadioPlayerManager();
     _radioManager.initAudio(() {
       if (mounted) setState(() {});
     });
+  }
+
+  // دالة إظهار رسالة الترحيب العائمة المؤقتة
+  void _showWelcomeBanner(String userName) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Text("🤖", style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                "منور الشات يا $userName 👋✨ أهلاً بيك معنا!",
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.purple.shade800,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+        margin: const EdgeInsets.all(20),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
   }
 
   Future<void> _playNotificationSound() async {
