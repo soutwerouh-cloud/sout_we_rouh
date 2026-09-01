@@ -48,7 +48,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     activeUserName = widget.currentUserName.isNotEmpty ? widget.currentUserName : "مستخدم";
     PresenceManager.setOnline(activeUserName);
     
-    // إظهار بانر الترحيب العائم المؤقت أول ما تدخل الشات
+    // إظهار بانر الفقاعات الترحيبية العائمة المؤقتة أول ما تدخل الشات
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showWelcomeBanner(activeUserName);
     });
@@ -59,29 +59,74 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     });
   }
 
-  // دالة إظهار رسالة الترحيب العائمة المؤقتة
+  // دالة إظهار فقاعة ترحيب مؤقتة وحيوية للشات
   void _showWelcomeBanner(String userName) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Text("🤖", style: TextStyle(fontSize: 18)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                "منور الشات يا $userName 👋✨ أهلاً بيك معنا!",
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
-              ),
-            ),
-          ],
+    OverlayEntry? overlayEntry;
+    
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: 100,
+        right: MediaQuery.of(context).size.width * 0.2,
+        left: MediaQuery.of(context).size.width * 0.2,
+        child: Material(
+          color: Colors.transparent,
+          child: TweenAnimationBuilder<double>(
+            tween: Tween(begin: 0.0, end: 1.0),
+            duration: const Duration(milliseconds: 500),
+            builder: (context, value, child) {
+              return Transform.scale(
+                scale: value,
+                child: Opacity(
+                  opacity: value,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.purple.shade700.withOpacity(0.95),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                      border: Border.all(color: Colors.purpleAccent, width: 1.5),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Text("🫧", style: TextStyle(fontSize: 18)),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "منور الشات يا $userName 👋✨ أهلاً بيك معنا!",
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text("🫧", style: TextStyle(fontSize: 18)),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
         ),
-        backgroundColor: Colors.purple.shade800,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 4),
-        margin: const EdgeInsets.all(20),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
+
+    Overlay.of(context).insert(overlayEntry);
+
+    Future.delayed(const Duration(seconds: 4), () {
+      overlayEntry?.remove();
+    });
   }
 
   Future<void> _playNotificationSound() async {
@@ -278,7 +323,6 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                               width: 12,
                               height: 12,
                               decoration: BoxDecoration(
-                                // ألوان الحالة الزاهية: أخضر زاهي للمتصل وأحمر زاهي لغير المتصل
                                 color: isOnline ? Colors.greenAccent.shade400 : Colors.redAccent.shade200,
                                 shape: BoxShape.circle,
                                 border: Border.all(color: Colors.white, width: 2),
