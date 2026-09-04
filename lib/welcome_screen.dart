@@ -2,11 +2,20 @@ import 'package:flutter/material.dart';
 import 'subscription_screen.dart';
 import 'main_navigation_screen.dart';
 import 'artists_feed_screen.dart';
-import 'radio_and_public_chat_screen.dart'; // تم استيراد الملف الرئيسي الجديد الشامل للشات والراديو
+import 'radio_and_public_chat_screen.dart'; 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
+
+  // دالة لفتح الروابط الخارجية
+  Future<void> _launchURL(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not launch $url');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -202,6 +211,47 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 15),
+
+                // أزرار منصات التواصل الاجتماعي بألوان مميزة وتصميم احترافي
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10.0),
+                  child: Wrap(
+                    alignment: WrapAlignment.center,
+                    spacing: 8.0,
+                    runSpacing: 8.0,
+                    children: [
+                      // فيسبوك
+                      ActionChip(
+                        backgroundColor: const Color(0xFF1877F2),
+                        avatar: const Icon(Icons.facebook, color: Colors.white, size: 18),
+                        label: const Text('فيسبوك', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        onPressed: () => _launchURL('https://www.facebook.com/soutwerouh.official'),
+                      ),
+                      // إنستجرام
+                      ActionChip(
+                        backgroundColor: const Color(0xFFE4405F),
+                        avatar: const Icon(Icons.camera_alt, color: Colors.white, size: 16),
+                        label: const Text('إنستجرام', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        onPressed: () => _launchURL('https://www.instagram.com/soutwerouh.official/'),
+                      ),
+                      // تيك توك
+                      ActionChip(
+                        backgroundColor: Colors.black,
+                        avatar: const Icon(Icons.music_note, color: Colors.white, size: 16),
+                        label: const Text('تيك توك', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        onPressed: () => _launchURL('https://www.tiktok.com/@soutwerouh'),
+                      ),
+                      // يوتيوب
+                      ActionChip(
+                        backgroundColor: const Color(0xFFFF0000),
+                        avatar: const Icon(Icons.video_library, color: Colors.white, size: 16),
+                        label: const Text('يوتيوب', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                        onPressed: () => _launchURL('https://www.youtube.com/@soutwerouh'),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 15),
               ],
