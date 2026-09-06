@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://soutwerouh-cloud.github.io/sout_we_rouh/sitemap.xml
