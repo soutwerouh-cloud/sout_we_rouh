@@ -14,7 +14,6 @@ class RadioPlayerManager {
     {"title": "Dol-Mish-Habayeb", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Dol-Mish-Habayeb.mp3"},
     {"title": "El Saa 2 Bel Lail", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/El%20Saa%202%20Bel%20Lail.mp3"},
     {"title": "Habayeb_Eh", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Habayeb_Eh.mp3"},
-    {"title": "Mai_Mahmoud_Ana_El_Motayyam", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Mai_Mahmoud_Ana_El_Motayyam.mp3"},
     {"title": "Mai_Mahmoud_Bakam_Thamani", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Mai_Mahmoud_Bakam_Thamani.mp3"},
     {"title": "Mai_Mahmoud_Day_El_Qamar", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Mai_Mahmoud_Day_El_Qamar.mp3"},
     {"title": "Mai_Mahmoud_Hafez_El_Rouh", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Mai_Mahmoud_Hafez_El_Rouh.mp3"},
@@ -50,6 +49,19 @@ class RadioPlayerManager {
     {"title": "wnfdl_nrks", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/wnfdl_nrks.mp3"},
     {"title": "ya_5ofy", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/ya_5ofy.mp3"},
     {"title": "7kety_m3_ezman", "url": "https://github.com/soutwerouh-cloud/sout_we_rouh/raw/refs/heads/main/7kety_m3_ezman.mp3"},
+    {"title": "zharet_elrabe3_YA3YONKO", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/zharet_elrabe3_YA3YONKO.mp3"},
+    {"title": "Shaia_Men_Baaaed", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Shaia_Men_Baaaed.mp3"},
+    {"title": "ba7lam_wana_sahy", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/ba7lam_wana_sahy.mp3"},
+    {"title": "Men_Awel_Lamsa", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Men_Awel_Lamsa.mp3"},
+    {"title": "El_Maryala_El_Kohly", "url": "https://github.com/hayamahmoud049-backend/sout_we_rouh/raw/refs/heads/main/El_Maryala_El_Kohly.mp3"},
+    {"title": "Khayef", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Khayef.mp3"},
+    {"title": "Ana_Baashaa_El_Bahr", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Ana_Baashaa_El_Bahr.mp3"},
+    {"title": "Elset.De.Omy", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Elset.De.Omy.mp3"},
+    {"title": "Qaletly_Khalas", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Qaletly_Khalas.mp3"},
+    {"title": "Wala_Damaa", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Wala_Damaa.mp3"},
+    {"title": "Elly_Fi_Qalbe", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Elly_Fi_Qalbe.mp3"},
+    {"title": "Asaab_Hob", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Asaab_Hob.mp3"},
+    {"title": "Mai_Mahmoud_Ana_El_Motayyam", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Mai_Mahmoud_Ana_El_Motayyam.mp3"}
   ];
 
   bool _isInitializing = false;
@@ -87,7 +99,6 @@ class RadioPlayerManager {
       currentSongIndex = index;
       await player.stop();
       
-      // مهلة بسيطة لفك حظر المتصفح على الويب وتحديث الصوت والاسم معاً
       await Future.delayed(const Duration(milliseconds: 100));
 
       await player.setUrl(playlist[currentSongIndex]["url"]!, preload: true);
