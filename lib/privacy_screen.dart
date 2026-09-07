@@ -5,58 +5,112 @@ class PrivacyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('سياسة الخصوصية - صوت وروح', style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF7B1FA2),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
-            Text(
-              'سياسة الخصوصية لمنصة صوت وروح',
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Color(0xFF7B1FA2)),
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('سياسة الخصوصية - صوت وروح', style: TextStyle(color: Colors.white)),
+          backgroundColor: const Color(0xFF7B1FA2),
+          iconTheme: const IconThemeData(color: Colors.white),
+        ),
+        body: Container(
+          width: double.infinity,
+          height: double.infinity,
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF8E44AD),
+                Color(0xFF9B59B6),
+                Color(0xFFE08283),
+                Color(0xFF512DA8),
+              ],
+              stops: [0.0, 0.3, 0.65, 1.0],
             ),
-            SizedBox(height: 12),
-            Text(
-              'مرحباً بكِ/بكم في منصة "صوت وروح". نحن نولي اهتماماً بالغاً بخصوصية زوارنا ومستخدمينا. توضح وثيقة سياسة الخصوصية هذه أنواع المعلومات التي يتم جمعها وكيفية استخدامها وحمايتها.',
-              style: TextStyle(fontSize: 16, height: 1.6, color: Colors.black87),
+          ),
+          child: SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: const [
+                  Text(
+                    'سياسة الخصوصية لمنصة "صوت وروح"',
+                    style: TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    'مرحباً بك/بكم في منصة "صوت وروح". نحن نولي اهتماماً بالغاً بخصوصية زوارنا ومستخدمينا. توضح وثيقة سياسة الخصوصية هذه أنواع المعلومات التي يتم جمعها وكيفية استخدامها وحمايتها.',
+                    style: TextStyle(fontSize: 14, color: Colors.white, height: 1.6, fontWeight: FontWeight.w500),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    '1. ملفات تعريف الارتباط والإعلانات (Google AdSense & Analytics)',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    '• نستخدم خدمات تحليلات جوجل (Google Analytics) لفهم كيفية تفاعل الزوار مع المنصة لتحسين تجربة الاستخدام.\n'
+                    '• تستخدم شركة Google بصفتها مورداً خارجياً ملفات تعريف الارتباط (Cookies) لعرض الإعلانات على موقعنا.\n'
+                    '• يتيح استخدام Google لملف تعريف الارتباط DART عرض الإعلانات للمستخدمين بناءً على زيارتهم لموقعنا أو المواقع الأخرى على الإنترنت.\n'
+                    '• يمكن للمستخدمين إلغاء استخدام ملف تعريف الارتباط DART عن طريق زيارة سياسة الخصوصية الخاصة بإعلانات جوجل وشبكة المحتوى.',
+                    style: TextStyle(fontSize: 14, color: Colors.white, height: 1.6, fontWeight: FontWeight.w500),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    '2. حماية البيانات وأمن المعلومات',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'نلتزم باتخاذ كافة التدابير التقنية والأمنية المناسبة لحماية المعلومات والبيانات الشخصية وضمان عدم الوصول إليها أو تعديلها أو الإفصاح عنها بشكل غير مبرر.',
+                    style: TextStyle(fontSize: 14, color: Colors.white, height: 1.6, fontWeight: FontWeight.w500),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    '3. التعديلات على سياسة الخصوصية',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'يحق لنا تحديث سياسة الخصوصية من وقت لآخر لتتوافق مع المتطلبات التقنية أو القانونية، وسيتم نشر أي تغييرات جديدة على هذه الصفحة.',
+                    style: TextStyle(fontSize: 14, color: Colors.white, height: 1.6, fontWeight: FontWeight.w500),
+                  ),
+                  SizedBox(height: 20),
+                  Text(
+                    '4. اتصل بنا',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'إذا كان لديك أي استفسارات بخصوص سياسة الخصوصية هذه، يمكنك مراسلتنا عبر البريد الإلكتروني الرسمي للمنصة: soutwerouh@gmail.com',
+                    style: TextStyle(fontSize: 14, color: Colors.white, height: 1.6, fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
             ),
-            SizedBox(height: 20),
-            Text(
-              '1. ملفات تعريف الارتباط (Google Analytics & AdSense):',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'نستخدم خدمات تحليلات جوجل (Google Analytics) لفهم كيفية تفاعل الزوار مع المنصة لتحسين تجربة الاستخدام. كما قد تستخدم شركات الإعلانات الطرف الثالث (مثل Google AdSense) ملفات تعريف الارتباط لعرض إعلانات بناءً على زيارات المستخدمين السابقة للموقع.',
-              style: TextStyle(fontSize: 16, height: 1.6, color: Colors.black87),
-            ),
-            SizedBox(height: 20),
-            Text(
-              '2. حماية البيانات:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'نلتزم باتخاذ كافة التدابير الأمنية المناسبة لحماية المعلومات والبيانات الشخصية وضمان عدم الوصول إليها بشكل غير مبرر.',
-              style: TextStyle(fontSize: 16, height: 1.6, color: Colors.black87),
-            ),
-            SizedBox(height: 20),
-            Text(
-              '3. التعديلات على السياسة:',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'يحق لنا تحديث سياسة الخصوصية من وقت لآخر، وسيتم نشر أي تغيرات على هذه الصفحة.',
-              style: TextStyle(fontSize: 16, height: 1.6, color: Colors.black87),
-            ),
-          ],
+          ),
         ),
       ),
     );

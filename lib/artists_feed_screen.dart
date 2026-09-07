@@ -188,10 +188,9 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
                             Text('الموهبة: $artistName 👆 (اضغط للانتقال للصفحة وقراءة العمل كاملاً)', style: const TextStyle(color: Colors.blueGrey, fontSize: 12, fontWeight: FontWeight.w500)),
                             const SizedBox(height: 8),
                             if (content.isNotEmpty)
-                              Text(
+                              SelectableText( // تم التعديل هنا لتصبح الأبيات والشعر قابلة للنسخ واللصق
                                 content,
                                 maxLines: 3,
-                                overflow: TextOverflow.ellipsis,
                                 style: const TextStyle(fontSize: 13, color: Colors.black87),
                               ),
                             const Divider(height: 20),
@@ -202,7 +201,6 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    // زر التشغيل والإيقاف الواضح والصريح
                                     InkWell(
                                       onTap: () {
                                         String targetUrl = audioUrl.isNotEmpty ? audioUrl : content;
@@ -213,7 +211,7 @@ class _ArtistsScreenState extends State<ArtistsScreen> {
                                         child: Icon(
                                           isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
                                           color: isPlaying ? Colors.red : const Color(0xFF7B1FA2),
-                                          size: 28, // حجم واضح وبارز
+                                          size: 28,
                                         ),
                                       ),
                                     ),
