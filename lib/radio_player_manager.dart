@@ -7,8 +7,7 @@ class RadioPlayerManager {
   bool isPlaying = false;
   int currentSongIndex = 0;
 
-
-final List<Map<String, String>> playlist = [
+  final List<Map<String, String>> playlist = [
     {"title": "Ah.Lw.L3bt.Ya.Zhr", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Ah.Lw.L3bt.Ya.Zhr.mp3"},
     {"title": "Ana_Mosh_3arefni", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Ana_Mosh_3arefni%20.mp3"},
     {"title": "El Gany Baad Yomen", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/El%20Gany%20Baad%20Yomen.mp3"},
@@ -64,12 +63,8 @@ final List<Map<String, String>> playlist = [
     {"title": "Asaab_Hob", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Asaab_Hob.mp3"},
     {"title": "Mai_Mahmoud_Ana_El_Motayyam", "url": "https://github.com/hayamahmoud049-bot/sout_we_rouh/raw/refs/heads/main/Mai_Mahmoud_Ana_El_Motayyam.mp3"}
   ];
-  bool _isInitializing = false;
 
   Future<void> initAudio(Function onStateChanged) async {
-    if (_isInitializing) return;
-    _isInitializing = true;
-
     try {
       final session = await AudioSession.instance;
       await session.configure(const AudioSessionConfiguration.music());
@@ -81,29 +76,9 @@ final List<Map<String, String>> playlist = [
       });
 
       playlist.shuffle();
-
       currentSongIndex = 0;
-      await player.setUrl(playlist[currentSongIndex]["url"]!, preload: true);
-      await player.play();
-      isPlaying = true;
-      onStateChanged();
-    } catch (e) {
-      debugPrint("Error: $e");
-    } finally {
-      _isInitializing = false;
-    }
-  }
-
-  Future<void> _playSongAtIndex(int index, Function onStateChanged) async {
-    try {
-      currentSongIndex = index;
-      await player.stop();
-      
-      // مهلة بسيطة لفك حظر المتصفح على الويب وتحديث الصوت والاسم معاً
-      await Future.delayed(const Duration(milliseconds: 100));
-
-      await player.setUrl(playlist[currentSongIndex]["url"]!, preload: true);
-      await player.play();
+      await player.setUrl(playlist[currentSongIndex]["url"]!);
+      player.play();
       isPlaying = true;
       onStateChanged();
     } catch (e) {
@@ -112,21 +87,27 @@ final List<Map<String, String>> playlist = [
   }
 
   Future<void> playNext(Function onStateChanged) async {
-    int nextIndex = (currentSongIndex + 1) % playlist.length;
-    await _playSongAtIndex(nextIndex, onStateChanged);
+    currentSongIndex = (currentSongIndex + 1) % playlist.length;
+    await player.setUrl(playlist[currentSongIndex]["url"]!);
+    player.play();
+    isPlaying = true;
+    onStateChanged();
   }
 
   Future<void> playPrevious(Function onStateChanged) async {
-    int prevIndex = (currentSongIndex - 1 < 0) ? playlist.length - 1 : currentSongIndex - 1;
-    await _playSongAtIndex(prevIndex, onStateChanged);
+    currentSongIndex = (currentSongIndex - 1 < 0) ? playlist.length - 1 : currentSongIndex - 1;
+    await player.setUrl(playlist[currentSongIndex]["url"]!);
+    player.play();
+    isPlaying = true;
+    onStateChanged();
   }
 
   Future<void> togglePlayPause(Function onStateChanged) async {
     isPlaying = !isPlaying;
     if (isPlaying) {
-      await player.play();
+      player.play();
     } else {
-      await player.pause();
+      player.pause();
     }
     onStateChanged();
   }

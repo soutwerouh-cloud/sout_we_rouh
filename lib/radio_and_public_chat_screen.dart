@@ -48,7 +48,6 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     activeUserName = widget.currentUserName.isNotEmpty ? widget.currentUserName : "مستخدم";
     PresenceManager.setOnline(activeUserName);
     
-    // إظهار بانر الفقاعات الترحيبية العائمة المؤقتة أول ما تدخل الشات
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showWelcomeBanner(activeUserName);
     });
@@ -59,7 +58,6 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     });
   }
 
-  // دالة إظهار فقاعة ترحيب مؤقتة وحيوية للشات
   void _showWelcomeBanner(String userName) {
     OverlayEntry? overlayEntry;
     
@@ -147,7 +145,6 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     super.dispose();
   }
 
-  // دالة تنظيف الشات العام (الاحتفاظ بآخر 30 رسالة وحذف الباقي من الفايربيس تلقائياً)
   Future<void> _cleanupPublicMessages() async {
     try {
       var snapshot = await _firestore.collection('messages').orderBy('timestamp', descending: true).get();
@@ -161,7 +158,6 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     }
   }
 
-  // دالة تنظيف الشات الخاص بين المستخدم ومستخدم آخر (الاحتفاظ بآخر 30 رسالة فقط)
   Future<void> _cleanupPrivateMessages(String otherUser) async {
     try {
       var snapshot = await _firestore.collection('inbox')
@@ -305,7 +301,11 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                     final memberData = memberDocs[index].data() as Map<String, dynamic>;
                     final memberName = memberData["name"] ?? "مستخدم";
                     final talentType = memberData["talentType"] ?? "موهبة جديدة";
-                    final bool isOnline = memberData["isOnline"] == true;
+                    
+                    // التحقق من أن المستخدم أونلاين وبشرط أن يكون آخر ظهور له خلال آخر 90 ثانية فقط
+                    final Timestamp? lastSeenTime = memberData["lastSeen"] as Timestamp?;
+                    final bool isOnline = (memberData["isOnline"] == true) && 
+                        (lastSeenTime != null && DateTime.now().difference(lastSeenTime.toDate()).inSeconds < 90);
 
                     if (memberName == activeUserName) return const SizedBox.shrink();
 

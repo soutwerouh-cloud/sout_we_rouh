@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PresenceManager {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static Timer? _heartbeatTimer;
 
   static Future<void> setOnline(String userName) async {
     if (userName.isEmpty || userName == "مستخدم") return;
@@ -19,12 +21,28 @@ class PresenceManager {
           });
         }
       }
+
+      // إرسال نبضة تحديث كل 30 ثانية طالما المستخدم موجود في الشات
+      _heartbeatTimer?.cancel();
+      _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (timer) async {
+        var freshSnapshot = await _firestore.collection('talents').get();
+        for (var doc in freshSnapshot.docs) {
+          String dbName = (doc.data()['name'] ?? '').toString().trim().toLowerCase();
+          if (dbName == cleanName) {
+            await doc.reference.update({
+              'isOnline': true,
+              'lastSeen': FieldValue.serverTimestamp(),
+            });
+          }
+        }
+      });
     } catch (e) {
-      debugPrint("خطأ في تحديث الحالة: $e");
+      debugPrint("خطأ في تحديث الحالة أونلاين: $e");
     }
   }
 
   static Future<void> setOffline(String userName) async {
+    _heartbeatTimer?.cancel();
     if (userName.isEmpty || userName == "مستخدم") return;
     try {
       String cleanName = userName.trim().toLowerCase();
@@ -40,7 +58,7 @@ class PresenceManager {
         }
       }
     } catch (e) {
-      debugPrint("خطأ في تحديث الحالة: $e");
+      debugPrint("خطأ في تحديث الحالة أوفلاين: $e");
     }
   }
 }
