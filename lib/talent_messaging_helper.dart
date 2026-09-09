@@ -27,7 +27,7 @@ Future<void> _cleanupTalentDirectMessages(String senderName, String recipientNam
   }
 }
 
-// دالة إرسال رسالة مباشرة مخصصة للمشتركين والمواهب المفعلة فقط مع التحقق من الحساب وكلمة المرور
+// دالة إرسال رسالة مباشرة مخصصة للمشتركين والمواهب المفعلة مع التوجيه الذكي (أونلاين/أوفلاين)
 void showDirectMessageDialog(BuildContext context, String recipientName) {
   final TextEditingController senderNameController = TextEditingController();
   final TextEditingController senderPasswordController = TextEditingController();
@@ -116,8 +116,23 @@ void showDirectMessageDialog(BuildContext context, String recipientName) {
               return;
             }
 
-            // الإرسال الناجح باسم الموهبة الحقيقية وفي الكوليكشن المنفصل الخاص بالمواهب
-            await FirebaseFirestore.instance.collection('talent_direct_messages').add({
+            // 1. فحص حالة المستقبل (هل هو Online أم Offline) من مجموعة المواهب أو الحضور
+            var recipientQuery = await FirebaseFirestore.instance
+                .collection('talents')
+                .where('name', isEqualTo: recipientClean)
+                .get();
+
+            bool isRecipientOnline = false;
+            if (recipientQuery.docs.isNotEmpty) {
+              var recipientData = recipientQuery.docs.first.data();
+              // افترضنا أن حقل isOnline موجود أو يعبر عن حالة نشاطه اللحظي
+              isRecipientOnline = recipientData['isOnline'] ?? false;
+            }
+
+            // 2. تطبيق التوجيه الذكي: لو أونلاين تذهب للمحادثة المباشرة الفورية، لو أوفلاين تحول لصندوق البريد
+            String targetCollection = isRecipientOnline ? 'talent_direct_messages' : 'inbox_messages';
+
+            await FirebaseFirestore.instance.collection(targetCollection).add({
               "sender": senderName,
               "receiver": recipientClean,
               "text": msg,
@@ -127,13 +142,20 @@ void showDirectMessageDialog(BuildContext context, String recipientName) {
               "timestamp": FieldValue.serverTimestamp(),
             });
 
-            // تفعيل التنظيف التلقائي للحفاظ على أحدث 30 رسالة للمحادثة فقط
-            await _cleanupTalentDirectMessages(senderName, recipientClean);
+            if (isRecipientOnline) {
+              // تفعيل التنظيف التلقائي فقط لو كانت رسالة شات مباشر
+              await _cleanupTalentDirectMessages(senderName, recipientClean);
+            }
 
             if (!context.mounted) return;
             Navigator.pop(context);
+            
+            String successMsg = isRecipientOnline 
+                ? 'تم إرسال الرسالة مباشرة لشات المستخدم ✅' 
+                : 'المستخدم غير متصل، تم إرسال رسالتك إلى صندوق البريد بنجاح 📥';
+
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('تم إرسال الرسالة بنجاح باسم حسابك المفعل ✅'), backgroundColor: Colors.green),
+              SnackBar(content: Text(successMsg), backgroundColor: Colors.green),
             );
           },
           child: const Text('إرسال 🚀', style: TextStyle(color: Colors.white)),

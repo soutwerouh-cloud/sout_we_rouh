@@ -125,8 +125,16 @@ class _ChatInputControllerWidgetState extends State<ChatInputControllerWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // حساب ارتفاع الكيبورد تلقائياً للموبايل لمنع تغطية حقل الكتابة والشاشة البيضاء
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: EdgeInsets.only(
+        left: 10,
+        right: 10,
+        top: 6,
+        bottom: keyboardHeight > 0 ? keyboardHeight + 6 : 6,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border(top: BorderSide(color: Colors.grey.shade300)),

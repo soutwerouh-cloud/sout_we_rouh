@@ -42,14 +42,35 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
   @override
   void initState() {
     super.initState();
+    _markMessagesAsRead();
     WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
   }
 
   @override
   void didUpdateWidget(covariant FloatingChatBox oldWidget) {
     super.didUpdateWidget(oldWidget);
+    _markMessagesAsRead();
     if (widget.messages.length != oldWidget.messages.length) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+    }
+  }
+
+  // دالة لتحديث الرسائل الواردة وجعلها مقروءة فور فتح الشات أو وصول رسالة جديدة
+  Future<void> _markMessagesAsRead() async {
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('inbox').get();
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        String sender = data['sender'] ?? '';
+        String receiver = data['receiver'] ?? '';
+        bool isRead = data['isRead'] ?? false;
+
+        if (sender == widget.memberName && receiver == widget.currentUserName && !isRead) {
+          await doc.reference.update({'isRead': true});
+        }
+      }
+    } catch (e) {
+      debugPrint("خطأ في تحديث رسائل الشات الخاص كمقروءة: $e");
     }
   }
 
