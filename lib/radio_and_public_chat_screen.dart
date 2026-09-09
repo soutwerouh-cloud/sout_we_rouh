@@ -150,7 +150,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
 
   @override
   void dispose() {
-    _postSystemMessage("غادر $activeUserName الشات، وبانتظارك قريباً. 🌙");
+    // تم إزالة رسالة المغادرة من هنا لكي لا تعلق أو تتكرر بشكل مزعج
     PresenceManager.setOffline(activeUserName);
     _radioManager.dispose();
     _messageController.dispose();
@@ -196,7 +196,6 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     }
   }
 
-  // دالة لتحديث الرسائل الواردة وجعلها مقروءة فور فتح الشات الخاص
   Future<void> _markConversationAsRead(String otherUser) async {
     try {
       var snapshot = await _firestore.collection('inbox').get();
@@ -278,7 +277,6 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
   }
 
   void _openPrivateChat(String memberName) {
-    // تحديث الرسائل كمقروءة فور فتح النافذة لتصفير عداد الـ Inbox
     _markConversationAsRead(memberName);
 
     if (!_activeChatWindows.contains(memberName)) {
@@ -425,10 +423,10 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
               builder: (context, snapshot) {
                 final unreadCount = snapshot.hasData ? snapshot.data!.docs.where((doc) {
                   final data = doc.data() as Map<String, dynamic>;
-                  // استثناء الرسائل الخاصة التي شاتها مفتوح حالياً من عداد البريد غير المقروء
                   String sender = data['sender'] ?? '';
                   bool isReceiver = data['receiver'] == activeUserName;
                   bool isUnread = (data['isRead'] == false || data['isRead'] == null);
+                  // تصفير العداد بصرياً فقط لو الشات الخاص مفتوح وغير مصغر
                   if (isReceiver && isUnread && _activeChatWindows.contains(sender) && !(_minimizedWindows[sender] ?? false)) {
                     return false;
                   }
@@ -756,7 +754,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                                          (sender == memberName && receiver == activeUserName);
                                 }).toList();
 
-                                // ضبط الرسائل الواردة لتكون مقروءة طالما النافذة مفتوحة أمامه
+                                // تحديث الرسائل الواردة إلى مقروءة طالما النافذة مفتوحة
                                 for (var doc in allDocs) {
                                   final data = doc.data() as Map<String, dynamic>;
                                   if (data['sender'] == memberName && data['receiver'] == activeUserName && (data['isRead'] == false || data['isRead'] == null)) {
@@ -772,13 +770,14 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                                   onClose: () => _closePrivateChat(memberName),
                                   onMinimize: () => _toggleMinimizeChat(memberName),
                                   onSend: (text, isImg, isVoiceMsg) async {
+                                    // ضبط الرسالة على isRead: false عند إرسالها لكي تظهر للطرف الآخر في الينبوكس لو كان مغلقاً
                                     await _firestore.collection('inbox').add({
                                       "sender": activeUserName, 
                                       "receiver": memberName, 
                                       "text": text,
                                       "isImage": isImg,
                                       "isVoice": isVoiceMsg,
-                                      "isRead": true, // حفظها كمقروءة لأن الشات مفتوح بالفعل
+                                      "isRead": false, 
                                       "timestamp": FieldValue.serverTimestamp(),
                                     });
                                     _cleanupPrivateMessages(memberName); 
@@ -791,7 +790,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                                         "text": path,
                                         "isImage": isImg,
                                         "isVoice": false,
-                                        "isRead": true,
+                                        "isRead": false,
                                         "timestamp": FieldValue.serverTimestamp(),
                                       });
                                       _cleanupPrivateMessages(memberName);
