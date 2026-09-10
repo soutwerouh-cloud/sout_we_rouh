@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'talent_model.dart';
@@ -70,15 +71,24 @@ Widget buildTalentListWithAllWorks(BuildContext context, String categoryKeyword,
                 if (workSnapshot.hasData) {
                   for (var wDoc in workSnapshot.data!.docs) {
                     var wData = wDoc.data() as Map<String, dynamic>;
-                    if (wData['title'] != null) {
-                      workTitles.add(wData['title']);
+                    String? audioUrl = wData['audioUrl'];
+                    bool hasAudio = audioUrl != null && audioUrl.isNotEmpty;
+
+                    bool isPoetryCategory = categoryKeyword.contains('شعر');
+                    
+                    if (isPoetryCategory && !hasAudio && wData['title'] != null) {
+                      workTitles.add('📜 ${wData['title']}');
+                    } else if (!isPoetryCategory && hasAudio && wData['title'] != null) {
+                      workTitles.add('🎵 ${wData['title']}');
                     }
                   }
                 }
 
-                String worksText = workTitles.isNotEmpty 
-                    ? 'الأعمال: ${workTitles.join(' - ')}' 
-                    : 'لا توجد أعمال منشورة';
+                if (workTitles.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+
+                String worksText = 'الأعمال: ${workTitles.join(' - ')}';
 
                 return Center(
                   child: SizedBox(
@@ -89,16 +99,28 @@ Widget buildTalentListWithAllWorks(BuildContext context, String categoryKeyword,
                       margin: const EdgeInsets.only(bottom: 8),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                       child: Padding(
-                        padding: const EdgeInsets.all(10.0), // تصغير الحشو الداخلي
+                        padding: const EdgeInsets.all(10.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Row(
-                              mainAxisAlignment: MainAxisAlignment.end, // اسم الموهبة وأيقونتها على اليمين بالكامل بدون تصنيف
+                              mainAxisAlignment: MainAxisAlignment.end,
                               children: [
                                 Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF7B1FA2))),
                                 const SizedBox(width: 8),
-                                Icon(icon, color: const Color(0xFF7B1FA2), size: 20),
+                                // عرض الصورة الشخصية للموهبة بدلاً من الأيقونة الثابتة
+                                CircleAvatar(
+                                  radius: 14,
+                                  backgroundColor: Colors.purple.shade100,
+                                  backgroundImage: (talent.profileImage.isNotEmpty && talent.profileImage.length > 10)
+                                      ? (talent.profileImage.startsWith('http')
+                                          ? NetworkImage(talent.profileImage) as ImageProvider
+                                          : MemoryImage(base64Decode(talent.profileImage)))
+                                      : null,
+                                  child: (talent.profileImage.isEmpty || talent.profileImage.length <= 10)
+                                      ? Icon(icon, color: const Color(0xFF7B1FA2), size: 16)
+                                      : null,
+                                ),
                               ],
                             ),
                             const SizedBox(height: 4),

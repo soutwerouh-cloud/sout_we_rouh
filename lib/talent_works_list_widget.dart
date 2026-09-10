@@ -8,7 +8,7 @@ class TalentWorksListWidget extends StatelessWidget {
   final Function(String workId, String currentTitle, String currentContent) onEditWork;
   final Function(String workId) onDeleteWork;
   final Function(String workId, int currentLikes) onLikeWork;
-  final Function(String workId, Map<String, dynamic> workData) onSelectWork; // دالة إرسال العمل لمساحة العرض الرئيسية فوق
+  final Function(String workId, Map<String, dynamic> workData) onSelectWork;
 
   const TalentWorksListWidget({
     super.key,
@@ -40,6 +40,9 @@ class TalentWorksListWidget extends StatelessWidget {
           bool isPlaying = currentlyPlayingWorkId == workDoc.id;
           bool hasAudio = audioUrl != null && audioUrl.isNotEmpty;
 
+          String workTitle = workData['title'] ?? '';
+          String typePrefix = hasAudio ? '🎵 [صوتي] ' : '📜 [قصيدة كتابية] ';
+
           return Center(
             child: SizedBox(
               width: 420,
@@ -51,7 +54,6 @@ class TalentWorksListWidget extends StatelessWidget {
                 child: InkWell(
                   borderRadius: BorderRadius.circular(6),
                   onTap: () {
-                    // عند الضغط على الكارد، يظهر العمل فوق في مساحة العرض الرئيسية
                     onSelectWork(workDoc.id, workData);
                   },
                   child: Padding(
@@ -65,9 +67,9 @@ class TalentWorksListWidget extends StatelessWidget {
                           children: [
                             Expanded(
                               child: Text(
-                                workData['title'] ?? '', 
+                                '$typePrefix$workTitle', 
                                 textAlign: TextAlign.right,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF7B1FA2)),
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF7B1FA2)),
                               ),
                             ),
                             Row(

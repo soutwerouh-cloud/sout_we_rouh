@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:file_picker/file_picker.dart';
 
 class TalentWorkFormWidget extends StatelessWidget {
@@ -27,6 +28,45 @@ class TalentWorkFormWidget extends StatelessWidget {
     required this.onRequireAuth,
   });
 
+  // نافذة ذكية مخصصة للception ولصق النصوص الطويلة والقصائد لتجاوز قيود متصفحات الويب
+  void _showPasteDialog(BuildContext context) {
+    final TextEditingController tempController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('📋 لصق القصيدة أو العمل الأدبي', style: TextStyle(color: Color(0xFF7B1FA2), fontWeight: FontWeight.bold)),
+          content: SizedBox(
+            width: 400,
+            child: TextField(
+              controller: tempController,
+              maxLines: 10,
+              autofocus: true,
+              decoration: const InputDecoration(
+                hintText: 'اضغط هنا ثم اضغط Ctrl+V للصق النص...',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('إلغاء', style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7B1FA2)),
+              onPressed: () {
+                workContentController.text = tempController.text;
+                Navigator.pop(context);
+              },
+              child: const Text('إدراج النص بالحقل 🚀', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ExpansionTile(
@@ -44,7 +84,10 @@ class TalentWorkFormWidget extends StatelessWidget {
               onRequireAuth();
             }
           },
-          decoration: const InputDecoration(labelText: 'عنوان العمل (مثلاً: اسم الأغنية أو القصيدة)', border: OutlineInputBorder()),
+          decoration: const InputDecoration(
+            labelText: 'عنوان العمل (مثلاً: اسم الأغنية أو القصيدة)',
+            border: OutlineInputBorder(),
+          ),
         ),
         const SizedBox(height: 12),
         if (!isPoet) ...[
@@ -76,15 +119,42 @@ class TalentWorkFormWidget extends StatelessWidget {
           ),
           const SizedBox(height: 10),
         ],
+
+        // زر لصق ذكي ومضمون 100% لتجاوز حظر الويب
+        if (isPoet) ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF7B1FA2),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                ),
+                onPressed: () {
+                  if (!isAuthorized) {
+                    onRequireAuth();
+                    return;
+                  }
+                  _showPasteDialog(context);
+                },
+                icon: const Icon(Icons.paste, size: 16, color: Colors.white),
+                label: const Text('اضغط هنا للّصق السريع للقصيدة 📋', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+        ],
+
         TextField(
           controller: workContentController,
-          readOnly: !isAuthorized || !isPoet,
+          readOnly: !isAuthorized,
           onTap: () {
             if (!isAuthorized) {
               onRequireAuth();
             }
           },
           maxLines: isPoet ? 4 : 1,
+          enableInteractiveSelection: true,
           decoration: InputDecoration(
             labelText: isPoet ? 'اكتب كلمات الشعر والقصيدة هنا...' : 'تفاصيل العمل أو الملف الصوتي',
             border: const OutlineInputBorder(),
@@ -92,8 +162,8 @@ class TalentWorkFormWidget extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         isUploadingAudio
-            ? Column(
-                children: const [
+            ? const Column(
+                children: [
                   CircularProgressIndicator(color: Color(0xFF7B1FA2)),
                   SizedBox(height: 8),
                   Text('جاري رفع الأغنية للسحابة، يرجى الانتظار قليلاً...', style: TextStyle(color: Colors.purple, fontSize: 13)),

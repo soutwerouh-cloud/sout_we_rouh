@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'talent_model.dart';
@@ -43,6 +44,9 @@ class GuideScreen extends StatelessWidget {
               ...docs.map((doc) {
                 var data = doc.data() as Map<String, dynamic>;
                 var talent = TalentModel.fromMap(data, doc.id);
+                
+                // تحديد ما إذا كانت هذه البطاقة خاصة بالشعر أو الغناء بناءً على قسم الموهبة في المستند
+                bool isCardPoet = talent.category.contains('شعر') || talent.category.contains('شع');
 
                 return StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
@@ -54,11 +58,22 @@ class GuideScreen extends StatelessWidget {
                     if (workSnapshot.hasData) {
                       for (var wDoc in workSnapshot.data!.docs) {
                         var wData = wDoc.data() as Map<String, dynamic>;
-                        if (wData['title'] != null) workTitles.add(wData['title']);
+                        String? audioUrl = wData['audioUrl'];
+                        bool hasAudio = audioUrl != null && audioUrl.isNotEmpty;
+                        String? title = wData['title'];
+
+                        if (title != null) {
+                          // فلترة الأعمال بناءً على قسم البطاقة (شعر يطابق القصائد بدون صوت، غناء يطابق الأعمال الصوتية)
+                          if (isCardPoet && !hasAudio) {
+                            workTitles.add('📜 $title');
+                          } else if (!isCardPoet && hasAudio) {
+                            workTitles.add('🎵 $title');
+                          }
+                        }
                       }
                     }
 
-                    String worksText = workTitles.isNotEmpty ? 'الأعمال: ${workTitles.join(' - ')}' : 'لا توجد أعمال';
+                    String worksText = workTitles.isNotEmpty ? 'الأعمال: ${workTitles.join(' - ')}' : 'لا توجد أعمال في هذا القسم';
 
                     return Center(
                       child: SizedBox(
@@ -76,7 +91,37 @@ class GuideScreen extends StatelessWidget {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF7B1FA2))),
+                                    // عرض اسم الموهبة وبجانبها صورتها الشخصية المرتبطة بالحساب بشكل متناسق
+                                    Row(
+                                      children: [
+                                        SizedBox(
+                                          width: 28,
+                                          height: 28,
+                                          child: ClipOval(
+                                            child: (talent.profileImage.isNotEmpty && talent.profileImage.length > 10)
+                                                ? (talent.profileImage.startsWith('http')
+                                                    ? Image.network(
+                                                        talent.profileImage,
+                                                        fit: BoxFit.cover,
+                                                        alignment: Alignment.topCenter,
+                                                        errorBuilder: (context, error, stackTrace) => Icon(isCardPoet ? Icons.menu_book : Icons.music_note, color: const Color(0xFF7B1FA2), size: 16),
+                                                      )
+                                                    : Image.memory(
+                                                        base64Decode(talent.profileImage),
+                                                        fit: BoxFit.cover,
+                                                        alignment: Alignment.topCenter,
+                                                        errorBuilder: (context, error, stackTrace) => Icon(isCardPoet ? Icons.menu_book : Icons.music_note, color: const Color(0xFF7B1FA2), size: 16),
+                                                      ))
+                                                : Container(
+                                                    color: Colors.purple.shade100,
+                                                    child: Icon(isCardPoet ? Icons.menu_book : Icons.music_note, color: const Color(0xFF7B1FA2), size: 16),
+                                                  ),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF7B1FA2))),
+                                      ],
+                                    ),
                                     Text(talent.category, style: const TextStyle(color: Color(0xFF7B1FA2), fontWeight: FontWeight.bold, fontSize: 12)),
                                   ],
                                 ),
@@ -111,7 +156,7 @@ class GuideScreen extends StatelessWidget {
                                           MaterialPageRoute(
                                             builder: (context) => TalentDetailScreen(
                                               talent: talent, 
-                                              icon: Icons.menu_book,
+                                              icon: isCardPoet ? Icons.menu_book : Icons.music_note,
                                             ),
                                           ),
                                         );

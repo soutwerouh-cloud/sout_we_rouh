@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'talent_model.dart';
@@ -26,10 +27,32 @@ class TalentHeaderWidget extends StatelessWidget {
         const SizedBox(height: 10),
         Stack(
           children: [
-            CircleAvatar(
-              radius: 50,
-              backgroundColor: const Color(0xFF7B1FA2).withOpacity(0.1),
-              child: Icon(icon, size: 50, color: const Color(0xFF7B1FA2)),
+            // استخدام Container مع ClipOval و alignment لضبط تمركز الوجه بوضوح داخل الدائرة
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: const Color(0xFF7B1FA2).withOpacity(0.1),
+                border: Border.all(color: const Color(0xFF7B1FA2), width: 2),
+              ),
+              child: ClipOval(
+                child: (currentProfileImage.isNotEmpty && currentProfileImage.length > 10)
+                    ? (currentProfileImage.startsWith('http')
+                        ? Image.network(
+                            currentProfileImage,
+                            fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
+                            errorBuilder: (context, error, stackTrace) => Icon(icon, size: 50, color: const Color(0xFF7B1FA2)),
+                          )
+                        : Image.memory(
+                            base64Decode(currentProfileImage),
+                            fit: BoxFit.cover,
+                            alignment: Alignment.topCenter,
+                            errorBuilder: (context, error, stackTrace) => Icon(icon, size: 50, color: const Color(0xFF7B1FA2)),
+                          ))
+                    : Icon(icon, size: 50, color: const Color(0xFF7B1FA2)),
+              ),
             ),
             Positioned(
               bottom: 0,

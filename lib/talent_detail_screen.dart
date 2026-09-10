@@ -13,7 +13,6 @@ import 'talent_messages_screen.dart';
 import 'talent_messaging_helper.dart';
 import 'shared_widgets.dart';
 
-// استيراد الملفات المقسمة
 import 'talent_header_widget.dart';
 import 'talent_work_form_widget.dart';
 import 'talent_works_list_widget.dart';
@@ -42,7 +41,6 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
   final ap.AudioPlayer _workAudioPlayer = ap.AudioPlayer();
   String? _currentlyPlayingWorkId;
 
-  // تخزين العمل المحدد حالياً لعرضه في مساحة العرض الرئيسية فوق
   Map<String, dynamic>? _selectedWorkData;
   String? _selectedWorkId;
 
@@ -63,11 +61,13 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
     super.dispose();
   }
 
+  // جلب أحدث صورة خاصة بهذا الاسم وهذا القسم حصرياً
   void _fetchLatestProfileImage() async {
     try {
       var querySnapshot = await FirebaseFirestore.instance
           .collection('talents')
           .where('name', isEqualTo: widget.talent.name.trim())
+          .where('category', isEqualTo: widget.talent.category.trim())
           .get();
 
       if (querySnapshot.docs.isNotEmpty) {
@@ -116,6 +116,7 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
               var querySnapshot = await FirebaseFirestore.instance
                   .collection('talents')
                   .where('name', isEqualTo: targetName)
+                  .where('category', isEqualTo: widget.talent.category.trim())
                   .get();
 
               if (querySnapshot.docs.isNotEmpty) {
@@ -137,7 +138,7 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
                 }
               } else {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('لم يتم العثور على بيانات الموهبة ❌'), backgroundColor: Colors.red),
+                  const SnackBar(content: Text('لم يتم العثور على بيانات الموهبة لهذا القسم ❌'), backgroundColor: Colors.red),
                 );
               }
             },
@@ -148,6 +149,7 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
     );
   }
 
+  // تحديث الصورة الشخصية المرتبطة بهذا القسم تحديداً
   Future<void> _pickAndUploadImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
@@ -159,6 +161,7 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
       var querySnapshot = await FirebaseFirestore.instance
           .collection('talents')
           .where('name', isEqualTo: widget.talent.name.trim())
+          .where('category', isEqualTo: widget.talent.category.trim())
           .get();
 
       if (querySnapshot.docs.isNotEmpty) {
@@ -173,7 +176,7 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم تثبيت الصورة الشخصية بنجاح ✅'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('تم تثبيت الصورة الشخصية لهذا القسم بنجاح ✅'), backgroundColor: Colors.green),
           );
         }
       }
@@ -440,7 +443,6 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
             ),
             const SizedBox(height: 24),
 
-            // **مساحة العرض الرئيسية (Master-Detail View)**: تظهر فوق عند الضغط على أي عمل من القائمة لتشغيله أو قراءته بالكامل
             if (_selectedWorkData != null) ...[
               Container(
                 width: double.infinity,
@@ -480,7 +482,6 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
                     ),
                     const Divider(),
                     const SizedBox(height: 8),
-                    // لو القسم شعر، اعرض الكلمات الكاملة بوضوح
                     if (isPoet && (_selectedWorkData!['content'] ?? '').isNotEmpty) ...[
                       Text(
                         _selectedWorkData!['content'],
@@ -489,7 +490,6 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
                       ),
                       const SizedBox(height: 16),
                     ],
-                    // لو القسم غناء/تلحين، اعرض زر التشغيل والمحتوى الصوتي بشكل بارز
                     if (!isPoet && (_selectedWorkData!['audioUrl'] ?? '').isNotEmpty) ...[
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
@@ -549,7 +549,30 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
                   return const Center(child: Text('لا توجد أعمال منشورة حتى الآن', style: TextStyle(color: Colors.grey)));
                 }
 
-                var works = snapshot.data!.docs.toList();
+                var works = snapshot.data!.docs.where((doc) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  String? audioUrl = data['audioUrl'];
+                  bool hasAudio = audioUrl != null && audioUrl.isNotEmpty;
+
+                  if (isPoet) {
+                    return !hasAudio; 
+                  } else {
+                    return hasAudio; 
+                  }
+                }).toList();
+
+                if (works.isEmpty) {
+                  return Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(
+                        isPoet ? 'لا توجد قصائد كتابية منشورة حتى الآن 📜' : 'لا توجد أعمال صوتية منشورة حتى الآن 🎵',
+                        style: const TextStyle(color: Colors.grey, fontSize: 14),
+                      ),
+                    ),
+                  );
+                }
+
                 works.sort((a, b) {
                   var dataA = a.data() as Map<String, dynamic>;
                   var dataB = b.data() as Map<String, dynamic>;
