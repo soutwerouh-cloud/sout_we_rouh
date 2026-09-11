@@ -55,7 +55,6 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
     }
   }
 
-  // دالة لتحديث الرسائل الواردة وجعلها مقروءة فور فتح الشات أو وصول رسالة جديدة
   Future<void> _markMessagesAsRead() async {
     try {
       final snapshot = await FirebaseFirestore.instance.collection('inbox').get();
@@ -144,12 +143,16 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
     final screenSize = MediaQuery.of(context).size;
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
 
+    // حساب الارتفاع الديناميكي بدقة لكي يتناسب مع فتح الكيبورد
+    double calculatedMaxHeight = keyboardHeight > 0 
+        ? (screenSize.height - keyboardHeight) * 0.6 
+        : screenSize.height * 0.55;
+
     return Padding(
-      // يرفع النافذة العائمة بالكامل فوق لوحة المفاتيح
-      padding: EdgeInsets.only(bottom: keyboardHeight),
+      padding: EdgeInsets.only(bottom: keyboardHeight > 0 ? keyboardHeight : 0),
       child: Container(
         constraints: BoxConstraints(
-          maxHeight: screenSize.height * 0.55,
+          maxHeight: calculatedMaxHeight,
           maxWidth: screenSize.width > 500 ? 380 : screenSize.width * 0.92,
         ),
         decoration: BoxDecoration(
@@ -162,7 +165,6 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // شريط العنوان العلوي للشات الخاص مع تصميم واضح جداً لزر التصغير
             Container(
               height: 40,
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -173,7 +175,6 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // أزرار التصغير والإغلاق على اليمين بتصميم بارز
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -206,7 +207,6 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
                       ),
                     ],
                   ),
-                  // اسم الشخص والأيقونة على اليسار
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -227,7 +227,6 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
               ),
             ),
             
-            // محتوى الرسائل
             Flexible(
               child: Container(
                 color: Colors.grey.shade100,
@@ -320,7 +319,6 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
               ),
             ),
 
-            // شريط الإدخال السفلي للشات الخاص
             ChatInputControllerWidget(
               textController: _messageController,
               onSendText: _sendTextMessage,
