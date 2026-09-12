@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:audioplayers/audioplayers.dart' as ap;
 import 'dart:convert';
-import 'dart:typed_data';
 import 'media_handlers.dart';
 import 'chat_input_controller_widget.dart';
 
@@ -13,7 +12,7 @@ class FloatingChatBox extends StatefulWidget {
   final bool isMinimized;
   final VoidCallback onClose;
   final VoidCallback onMinimize;
-  final Function(String, bool, bool) onSend; // text, isImage, isVoice
+  final Function(String, bool, bool) onSend;
   final VoidCallback onPickImage;
 
   const FloatingChatBox({
@@ -38,6 +37,7 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
   final ap.AudioPlayer _voicePlayer = ap.AudioPlayer();
   
   String? _currentlyPlayingVoiceUrl;
+  bool _isExpanded = false; // لتكبير وتصغير الشات بوضوح وثبات
 
   @override
   void initState() {
@@ -49,24 +49,23 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
   @override
   void didUpdateWidget(covariant FloatingChatBox oldWidget) {
     super.didUpdateWidget(oldWidget);
-    _markMessagesAsRead();
     if (widget.messages.length != oldWidget.messages.length) {
+      _markMessagesAsRead();
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
     }
   }
 
   Future<void> _markMessagesAsRead() async {
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('inbox').get();
-      for (var doc in snapshot.docs) {
-        final data = doc.data();
-        String sender = data['sender'] ?? '';
-        String receiver = data['receiver'] ?? '';
-        bool isRead = data['isRead'] ?? false;
+      final snapshot = await FirebaseFirestore.instance
+          .collection('inbox')
+          .where('sender', isEqualTo: widget.memberName)
+          .where('receiver', isEqualTo: widget.currentUserName)
+          .where('isRead', isEqualTo: false)
+          .get();
 
-        if (sender == widget.memberName && receiver == widget.currentUserName && !isRead) {
-          await doc.reference.update({'isRead': true});
-        }
+      for (var doc in snapshot.docs) {
+        doc.reference.update({'isRead': true});
       }
     } catch (e) {
       debugPrint("خطأ في تحديث رسائل الشات الخاص كمقروءة: $e");
@@ -91,9 +90,7 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
     try {
       if (_currentlyPlayingVoiceUrl == voicePath) {
         await _voicePlayer.stop();
-        setState(() {
-          _currentlyPlayingVoiceUrl = null;
-        });
+        setState(() => _currentlyPlayingVoiceUrl = null);
         return;
       }
 
@@ -105,24 +102,16 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
         await _voicePlayer.play(ap.UrlSource(voicePath));
       }
 
-      setState(() {
-        _currentlyPlayingVoiceUrl = voicePath;
-      });
+      setState(() => _currentlyPlayingVoiceUrl = voicePath);
 
       _voicePlayer.onPlayerComplete.listen((_) {
-        if (mounted) {
-          setState(() {
-            if (_currentlyPlayingVoiceUrl == voicePath) {
-              _currentlyPlayingVoiceUrl = null;
-            }
-          });
+        if (mounted && _currentlyPlayingVoiceUrl == voicePath) {
+          setState(() => _currentlyPlayingVoiceUrl = null);
         }
       });
     } catch (e) {
       debugPrint("خطأ تشغيل الصوت الخاص: $e");
-      setState(() {
-        _currentlyPlayingVoiceUrl = null;
-      });
+      setState(() => _currentlyPlayingVoiceUrl = null);
     }
   }
 
@@ -141,30 +130,21 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
     }
 
     final screenSize = MediaQuery.of(context).size;
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final double chatWidth = _isExpanded ? screenSize.width * 0.90 : 310.0;
+    final double chatHeight = _isExpanded ? screenSize.height * 0.65 : 420.0;
 
-    // حساب الارتفاع الديناميكي بدقة لكي يتناسب مع فتح الكيبورد
-    double calculatedMaxHeight = keyboardHeight > 0 
-        ? (screenSize.height - keyboardHeight) * 0.6 
-        : screenSize.height * 0.55;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: keyboardHeight > 0 ? keyboardHeight : 0),
+    return SizedBox(
+      width: chatWidth,
+      height: chatHeight,
       child: Container(
-        constraints: BoxConstraints(
-          maxHeight: calculatedMaxHeight,
-          maxWidth: screenSize.width > 500 ? 380 : screenSize.width * 0.92,
-        ),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-          boxShadow: const [
-            BoxShadow(color: Colors.black26, blurRadius: 8, offset: Offset(0, -2))
-          ],
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: const [BoxShadow(color: Colors.black26, blurRadius: 8)],
         ),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
           children: [
+            // شريط العنوان العلوي المنظم
             Container(
               height: 40,
               padding: const EdgeInsets.symmetric(horizontal: 8),
@@ -178,6 +158,25 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
+                      // زر التكبير والتصغير العملي
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade600,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: IconButton(
+                          icon: Icon(_isExpanded ? Icons.fullscreen_exit : Icons.fullscreen, color: Colors.white, size: 16),
+                          onPressed: () {
+                            setState(() {
+                              _isExpanded = !_isExpanded;
+                            });
+                          },
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 26, minHeight: 26),
+                          tooltip: _isExpanded ? 'تصغير' : 'تكبير',
+                        ),
+                      ),
+                      const SizedBox(width: 4),
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.yellow.shade700,
@@ -191,7 +190,7 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
                           tooltip: 'تصغير',
                         ),
                       ),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 4),
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.red.shade600,
@@ -211,7 +210,7 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       SizedBox(
-                        width: 170,
+                        width: 110,
                         child: Text(
                           widget.memberName, 
                           style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
@@ -227,12 +226,12 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
               ),
             ),
             
-            Flexible(
+            // قائمة الرسائل
+            Expanded(
               child: Container(
                 color: Colors.grey.shade100,
                 child: ListView.builder(
                   controller: _scrollController,
-                  shrinkWrap: true,
                   padding: const EdgeInsets.all(8),
                   itemCount: widget.messages.length,
                   itemBuilder: (context, index) {
@@ -257,7 +256,7 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
                       child: Container(
                         margin: const EdgeInsets.symmetric(vertical: 3),
                         padding: const EdgeInsets.all(8),
-                        constraints: const BoxConstraints(maxWidth: 240),
+                        constraints: const BoxConstraints(maxWidth: 200),
                         decoration: BoxDecoration(
                           color: isMe ? Colors.purple.shade700 : Colors.white,
                           borderRadius: BorderRadius.circular(10),
@@ -295,8 +294,8 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
                                           onTap: () => MediaHandlers.showImageDialog(context, base64Decode(textVal.split(',').last)),
                                           child: Image.memory(
                                             base64Decode(textVal.split(',').last),
-                                            width: 120,
-                                            height: 120,
+                                            width: 100,
+                                            height: 100,
                                             fit: BoxFit.cover,
                                           ),
                                         ),
@@ -319,14 +318,18 @@ class _FloatingChatBoxState extends State<FloatingChatBox> {
               ),
             ),
 
-            ChatInputControllerWidget(
-              textController: _messageController,
-              onSendText: _sendTextMessage,
-              onPickImage: widget.onPickImage,
-              onSendVoice: (audioData) {
-                widget.onSend(audioData, false, true);
-                WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
-              },
+            // حقل الكتابة مع تفادي الكيبورد
+            Padding(
+              padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+              child: ChatInputControllerWidget(
+                textController: _messageController,
+                onSendText: _sendTextMessage,
+                onPickImage: widget.onPickImage,
+                onSendVoice: (audioData) {
+                  widget.onSend(audioData, false, true);
+                  WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToBottom());
+                },
+              ),
             ),
           ],
         ),
