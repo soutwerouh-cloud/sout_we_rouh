@@ -5,11 +5,11 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'radio_player_manager.dart';
-import 'floating_chat_box.dart';
 import 'media_handlers.dart';
 import 'inbox_notifications_manager.dart';
 import 'chat_input_controller_widget.dart';
 import 'presence_manager.dart';
+import 'talents_sidebar_widget.dart';
 
 class ChatRadioScreen extends StatefulWidget {
   final bool isSubscribed; 
@@ -26,7 +26,7 @@ class ChatRadioScreen extends StatefulWidget {
 }
 
 class _ChatRadioScreenState extends State<ChatRadioScreen> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  final GlobalKey<ScaffoldState> scaffoldKey = GlobalKey<ScaffoldState>();
   late final RadioPlayerManager _radioManager;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   late String activeUserName;
@@ -34,9 +34,9 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
-  final List<String> _activeChatWindows = [];
-  final Map<String, Offset> _windowPositions = {};
-  final Map<String, bool> _minimizedWindows = {};
+  String? _activePrivateChatUser;
+  final List<String> _minimizedChatUsers = [];
+
   final ap.AudioPlayer _voicePlayer = ap.AudioPlayer();
   int _lastKnownUnreadCount = 0;
   
@@ -144,7 +144,36 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
     try {
       await _voicePlayer.play(ap.UrlSource('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'));
     } catch (e) {
-      debugPrint("خطأ في تشغيل الصوت: $e");
+      debugPrint("Error: $e");
+    }
+  }
+
+  Future<void> _playVoiceMessage(String voicePath) async {
+    try {
+      if (_currentlyPlayingVoiceUrl == voicePath) {
+        await _voicePlayer.stop();
+        setState(() => _currentlyPlayingVoiceUrl = null);
+        return;
+      }
+
+      if (voicePath.startsWith('data:audio')) {
+        final base64Str = voicePath.split(',').last;
+        final bytes = base64Decode(base64Str);
+        await _voicePlayer.play(ap.BytesSource(bytes));
+      } else {
+        await _voicePlayer.play(ap.UrlSource(voicePath));
+      }
+
+      setState(() => _currentlyPlayingVoiceUrl = voicePath);
+
+      _voicePlayer.onPlayerComplete.listen((_) {
+        if (mounted && _currentlyPlayingVoiceUrl == voicePath) {
+          setState(() => _currentlyPlayingVoiceUrl = null);
+        }
+      });
+    } catch (e) {
+      debugPrint("Error: $e");
+      setState(() => _currentlyPlayingVoiceUrl = null);
     }
   }
 
@@ -167,7 +196,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
         }
       }
     } catch (e) {
-      debugPrint("خطأ تنظيف الشات العام: $e");
+      debugPrint("Error: $e");
     }
   }
 
@@ -191,7 +220,7 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
         }
       }
     } catch (e) {
-      debugPrint("خطأ تنظيف الشات الخاص: $e");
+      debugPrint("Error: $e");
     }
   }
 
@@ -209,593 +238,487 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
         }
       }
     } catch (e) {
-      debugPrint("خطأ تحديث حالة القراءة: $e");
-    }
-  }
-
-  Future<void> _playVoiceMessage(String voicePath) async {
-    try {
-      if (_currentlyPlayingVoiceUrl == voicePath) {
-        await _voicePlayer.stop();
-        setState(() {
-          _currentlyPlayingVoiceUrl = null;
-        });
-        return;
-      }
-
-      if (voicePath.startsWith('data:audio')) {
-        final base64Str = voicePath.split(',').last;
-        final bytes = base64Decode(base64Str);
-        await _voicePlayer.play(ap.BytesSource(bytes));
-      } else {
-        await _voicePlayer.play(ap.UrlSource(voicePath));
-      }
-
-      setState(() {
-        _currentlyPlayingVoiceUrl = voicePath;
-      });
-
-      _voicePlayer.onPlayerComplete.listen((_) {
-        if (mounted) {
-          setState(() {
-            if (_currentlyPlayingVoiceUrl == voicePath) {
-              _currentlyPlayingVoiceUrl = null;
-            }
-          });
-        }
-      });
-    } catch (e) {
-      debugPrint("خطأ تشغيل الصوت: $e");
-      setState(() {
-        _currentlyPlayingVoiceUrl = null;
-      });
-    }
-  }
-
-  void _sendPublicMessage() async {
-    if (_messageController.text.trim().isNotEmpty) {
-      String msgText = _messageController.text.trim();
-      _messageController.clear();
-      await _firestore.collection('messages').add({
-        "sender": activeUserName,
-        "text": msgText,
-        "isImage": false,
-        "isVoice": false,
-        "timestamp": FieldValue.serverTimestamp(),
-      });
-      _cleanupPublicMessages(); 
-      
-      if (_scrollController.hasClients) {
-        _scrollController.animateTo(
-          0.0,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeOut,
-        );
-      }
+      debugPrint("Error: $e");
     }
   }
 
   void _openPrivateChat(String memberName) {
     _markConversationAsRead(memberName);
-
-    if (!_activeChatWindows.contains(memberName)) {
-      setState(() {
-        _activeChatWindows.add(memberName);
-        double startX = 20.0 + (_activeChatWindows.length * 15.0);
-        double startY = 80.0 + (_activeChatWindows.length * 15.0);
-        _windowPositions[memberName] = Offset(startX, startY);
-        _minimizedWindows[memberName] = false;
-      });
-    } else {
-      setState(() {
-        _minimizedWindows[memberName] = false;
-      });
-    }
-  }
-
-  void _closePrivateChat(String memberName) {
-    setState(() => _activeChatWindows.remove(memberName));
-  }
-
-  void _toggleMinimizeChat(String memberName) {
-    bool willBeMinimized = !(_minimizedWindows[memberName] ?? false);
-    setState(() => _minimizedWindows[memberName] = willBeMinimized);
-    if (!willBeMinimized) {
-      _markConversationAsRead(memberName);
-    }
-  }
-
-  Widget _buildTalentsSidebar() {
-    return Container(
-      width: 250,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(left: BorderSide(color: Colors.grey.shade300)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            color: Colors.purple.shade100,
-            child: const Row(
-              children: [
-                Icon(Icons.people, color: Colors.purple, size: 20),
-                SizedBox(width: 8),
-                Text("قائمة الأعضاء والمواهب", style: TextStyle(fontWeight: FontWeight.bold, color: Colors.purple, fontSize: 13)),
-              ],
-            ),
-          ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: _firestore.collection('talents').where('isApproved', isEqualTo: true).snapshots(),
-              builder: (context, snapshot) {
-                final memberDocs = snapshot.hasData ? snapshot.data!.docs : [];
-
-                return ListView.builder(
-                  itemCount: memberDocs.length,
-                  itemBuilder: (context, index) {
-                    final memberData = memberDocs[index].data() as Map<String, dynamic>;
-                    final memberName = memberData["name"] ?? "مستخدم";
-                    final talentType = memberData["talentType"] ?? "موهبة جديدة";
-                    
-                    final Timestamp? lastSeenTime = memberData["lastSeen"] as Timestamp?;
-                    final bool isOnline = (memberData["isOnline"] == true) && 
-                        (lastSeenTime != null && DateTime.now().difference(lastSeenTime.toDate()).inSeconds < 90);
-
-                    if (memberName == activeUserName) return const SizedBox.shrink();
-
-                    return ListTile(
-                      leading: Stack(
-                        children: [
-                          CircleAvatar(
-                            backgroundColor: Colors.purple.shade200,
-                            child: Text(memberName.isNotEmpty ? memberName[0] : "", style: const TextStyle(color: Colors.white)),
-                          ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              width: 12,
-                              height: 12,
-                              decoration: BoxDecoration(
-                                color: isOnline ? Colors.greenAccent.shade400 : Colors.redAccent.shade200,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      title: Text(memberName, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
-                      subtitle: Text(talentType, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                      trailing: const Icon(Icons.chat_bubble_outline, size: 16, color: Colors.purple),
-                      onTap: () {
-                        if (MediaQuery.of(context).size.width < 700) {
-                          Navigator.pop(context); 
-                        }
-                        _openPrivateChat(memberName);
-                      },
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
+    setState(() {
+      _activePrivateChatUser = memberName;
+      _minimizedChatUsers.remove(memberName);
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
     final bool isMobile = screenWidth < 700; 
 
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        key: _scaffoldKey,
+        key: scaffoldKey,
         resizeToAvoidBottomInset: true,
-        endDrawer: isMobile ? Drawer(child: _buildTalentsSidebar()) : null,
-        
-        bottomNavigationBar: _activeChatWindows.any((name) => _minimizedWindows[name] == true)
-            ? Container(
-                color: Colors.purple.shade900,
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                height: 45,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: _activeChatWindows.where((name) => _minimizedWindows[name] == true).map((memberName) {
-                      return Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.purple.shade700,
-                            foregroundColor: Colors.white,
-                            elevation: 2,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          icon: const Icon(Icons.chat, size: 16, color: Colors.greenAccent),
-                          label: Text(memberName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                          onPressed: () => _toggleMinimizeChat(memberName),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              )
-            : null,
+        endDrawer: isMobile ? Drawer(
+          child: TalentsSidebarWidget(
+            activeUserName: activeUserName,
+            onOpenPrivateChat: _openPrivateChat,
+            isMobile: true,
+          ),
+        ) : null,
 
-        body: Stack(
+        body: Column(
           children: [
-            // محتوى الصفحة الرئيسي (الهيدر البنفسجي، الراديو، والشات العام)
-            Column(
-              children: [
-                Container(
-                  color: Colors.purple.shade800,
-                  padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top, left: 8, right: 8, bottom: 8),
-                  child: Row(
-                    children: [
-                      if (isMobile)
-                        IconButton(
-                          icon: const Icon(Icons.menu, color: Colors.white),
-                          onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                        ),
-                      const Icon(Icons.mic_rounded, color: Colors.blueAccent, size: 24),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          "راديو وشات صوت وروح ($activeUserName)", 
-                          style: const TextStyle(color: Colors.white, fontSize: 14),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      StreamBuilder<QuerySnapshot>(
-                        stream: _firestore.collection('inbox').snapshots(),
-                        builder: (context, snapshot) {
-                          final unreadCount = snapshot.hasData ? snapshot.data!.docs.where((doc) {
-                            final data = doc.data() as Map<String, dynamic>;
-                            String sender = data['sender'] ?? '';
-                            bool isReceiver = data['receiver'] == activeUserName;
-                            bool isUnread = (data['isRead'] == false || data['isRead'] == null);
-                            if (isReceiver && isUnread && _activeChatWindows.contains(sender) && !(_minimizedWindows[sender] ?? false)) {
-                              return false;
-                            }
-                            return isReceiver && isUnread;
-                          }).length : 0;
+            Container(
+              color: Colors.purple.shade800,
+              padding: EdgeInsets.only(top: MediaQuery.of(context).padding.top, left: 8, right: 8, bottom: 8),
+              child: Row(
+                children: [
+                  if (isMobile)
+                    IconButton(
+                      icon: const Icon(Icons.menu, color: Colors.white),
+                      onPressed: () => scaffoldKey.currentState?.openDrawer(),
+                    ),
+                  const Icon(Icons.mic_rounded, color: Colors.blueAccent, size: 24),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      "راديو وشات صوت وروح ($activeUserName)", 
+                      style: const TextStyle(color: Colors.white, fontSize: 14),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: _firestore.collection('inbox').snapshots(),
+                    builder: (context, snapshot) {
+                      final unreadCount = snapshot.hasData ? snapshot.data!.docs.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        String sender = data['sender'] ?? '';
+                        bool isReceiver = data['receiver'] == activeUserName;
+                        bool isUnread = (data['isRead'] == false || data['isRead'] == null);
+                        return isReceiver && isUnread;
+                      }).length : 0;
 
-                          if (unreadCount > _lastKnownUnreadCount) {
-                            WidgetsBinding.instance.addPostFrameCallback((_) => _playNotificationSound());
-                          }
-                          _lastKnownUnreadCount = unreadCount;
+                      if (unreadCount > _lastKnownUnreadCount) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) => _playNotificationSound());
+                      }
+                      _lastKnownUnreadCount = unreadCount;
 
-                          return Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.mail_outline, color: Colors.white, size: 26),
-                                onPressed: () => InboxNotificationsManager.showInboxDialog(context, activeUserName, _openPrivateChat),
+                      return Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.mail_outline, color: Colors.white, size: 26),
+                            onPressed: () => InboxNotificationsManager.showInboxDialog(context, activeUserName, _openPrivateChat),
+                          ),
+                          if (unreadCount > 0)
+                            Positioned(
+                              right: 6,
+                              top: 6,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
+                                child: Text('$unreadCount', style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
                               ),
-                              if (unreadCount > 0)
-                                Positioned(
-                                  right: 6,
-                                  top: 6,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle),
-                                    child: Text('$unreadCount', style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold)),
-                                  ),
-                                ),
-                            ],
-                          );
-                        },
-                      ),
-                    ],
+                            ),
+                        ],
+                      );
+                    },
                   ),
-                ),
+                ],
+              ),
+            ),
 
-                // شريط مشغل الراديو
-                Container(
-                  color: Colors.purple.shade50,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.music_note, color: Colors.purple, size: 28),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _radioManager.playlist[_radioManager.currentSongIndex]["title"]!,
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.purple),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.skip_previous, color: Colors.purple, size: 28),
-                        onPressed: () => _radioManager.playPrevious(() => setState(() {})),
-                      ),
-                      IconButton(
-                        icon: Icon(
-                          _radioManager.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
-                          size: 38,
-                          color: Colors.purple.shade800,
-                        ),
-                        onPressed: () => _radioManager.togglePlayPause(() => setState(() {})),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.skip_next, color: Colors.purple, size: 28),
-                        onPressed: () => _radioManager.playNext(() => setState(() {})),
-                      ),
-                    ],
+            Container(
+              color: Colors.purple.shade50,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  const Icon(Icons.music_note, color: Colors.purple, size: 28),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      _radioManager.playlist[_radioManager.currentSongIndex]["title"]!,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Colors.purple),
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
-                ),
-                
-                // الشات العام وباقي المحتوى
-                Expanded(
-                  child: Row(
-                    children: [
-                      if (!isMobile) _buildTalentsSidebar(),
+                  IconButton(
+                    icon: const Icon(Icons.skip_previous, color: Colors.purple, size: 28),
+                    onPressed: () => _radioManager.playPrevious(() => setState(() {})),
+                  ),
+                  IconButton(
+                    icon: Icon(
+                      _radioManager.isPlaying ? Icons.pause_circle_filled : Icons.play_circle_filled,
+                      size: 38,
+                      color: Colors.purple.shade800,
+                    ),
+                    onPressed: () => _radioManager.togglePlayPause(() => setState(() {})),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.skip_next, color: Colors.purple, size: 28),
+                    onPressed: () => _radioManager.playNext(() => setState(() {})),
+                  ),
+                ],
+              ),
+            ),
+            
+            Expanded(
+              child: Row(
+                children: [
+                  if (!isMobile) TalentsSidebarWidget(
+                    activeUserName: activeUserName,
+                    onOpenPrivateChat: _openPrivateChat,
+                  ),
 
-                      Expanded(
-                        child: Container(
-                          color: Colors.grey.shade100,
-                          child: Column(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(6),
-                                color: Colors.purple.shade50,
-                                width: double.infinity,
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      "غرفة [ الشات العام ] - للمشتركين فقط",
-                                      style: TextStyle(fontSize: 12, color: Colors.purple, fontWeight: FontWeight.bold),
-                                    ),
-                                    if (isMobile) ...[
-                                      const SizedBox(width: 10),
-                                      InkWell(
-                                        onTap: () => _scaffoldKey.currentState?.openEndDrawer(),
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: Colors.purple.shade700,
-                                            borderRadius: BorderRadius.circular(6),
-                                          ),
-                                          child: const Row(
-                                            children: [
-                                              Icon(Icons.people, size: 14, color: Colors.white),
-                                              SizedBox(width: 4),
-                                              Text("الأعضاء", style: TextStyle(color: Colors.white, fontSize: 11)),
-                                            ],
-                                          ),
-                                        ),
+                  Expanded(
+                    child: Container(
+                      color: Colors.grey.shade100,
+                      child: Column(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            color: Colors.purple.shade50,
+                            width: double.infinity,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                if (_activePrivateChatUser != null) ...[
+                                  InkWell(
+                                    onTap: () => setState(() {
+                                      _activePrivateChatUser = null;
+                                    }),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.purple.shade700,
+                                        borderRadius: BorderRadius.circular(6),
                                       ),
-                                    ]
-                                  ],
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.arrow_back, size: 14, color: Colors.white),
+                                          SizedBox(width: 4),
+                                          Text("الشات العام", style: TextStyle(color: Colors.white, fontSize: 11)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  InkWell(
+                                    onTap: () => setState(() {
+                                      if (!_minimizedChatUsers.contains(_activePrivateChatUser)) {
+                                        _minimizedChatUsers.add(_activePrivateChatUser!);
+                                      }
+                                      _activePrivateChatUser = null;
+                                    }),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.shade700,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(Icons.minimize, size: 14, color: Colors.white),
+                                          SizedBox(width: 4),
+                                          Text("تصغير", style: TextStyle(color: Colors.white, fontSize: 11)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                ],
+                                Text(
+                                  _activePrivateChatUser == null 
+                                      ? "غرفة [ الشات العام ] - للمشتركين فقط" 
+                                      : "محادثة خاصة مع: [ $_activePrivateChatUser ]",
+                                  style: const TextStyle(fontSize: 12, color: Colors.purple, fontWeight: FontWeight.bold),
                                 ),
-                              ),
-                              Expanded(
-                                child: StreamBuilder<QuerySnapshot>(
-                                  stream: _firestore.collection('messages').orderBy('timestamp', descending: true).limit(30).snapshots(),
-                                  builder: (context, snapshot) {
-                                    final docs = snapshot.hasData ? snapshot.data!.docs : [];
+                                if (isMobile) ...[
+                                  const SizedBox(width: 10),
+                                  InkWell(
+                                    onTap: () => scaffoldKey.currentState?.openEndDrawer(),
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.purple.shade700,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: const Row(
+                                        children: [
+                                          Icon(Icons.people, size: 14, color: Colors.white),
+                                          SizedBox(width: 4),
+                                          Text("الأعضاء", style: TextStyle(color: Colors.white, fontSize: 11)),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ]
+                              ],
+                            ),
+                          ),
+                          Expanded(
+                            child: StreamBuilder<QuerySnapshot>(
+                              stream: _activePrivateChatUser == null
+                                  ? _firestore.collection('messages').orderBy('timestamp', descending: true).limit(30).snapshots()
+                                  : _firestore.collection('inbox').orderBy('timestamp', descending: true).snapshots(),
+                              builder: (context, snapshot) {
+                                final allDocs = snapshot.hasData ? snapshot.data!.docs : [];
+                                
+                                final docs = _activePrivateChatUser == null
+                                    ? allDocs
+                                    : allDocs.where((doc) {
+                                        final data = doc.data() as Map<String, dynamic>;
+                                        String sender = data['sender'] ?? '';
+                                        String receiver = data['receiver'] ?? '';
+                                        return (sender == activeUserName && receiver == _activePrivateChatUser) ||
+                                               (sender == _activePrivateChatUser && receiver == activeUserName);
+                                      }).toList();
 
-                                    return ListView.builder(
-                                      controller: _scrollController,
-                                      reverse: true,
-                                      padding: const EdgeInsets.all(12),
-                                      itemCount: docs.length,
-                                      itemBuilder: (context, index) {
-                                        final msg = docs[index].data() as Map<String, dynamic>;
-                                        final isMe = msg["sender"] == activeUserName;
-                                        final bool isVoice = msg["isVoice"] == true;
-                                        final String textVal = msg["text"] ?? "";
-                                        final bool isPlayingThis = (_currentlyPlayingVoiceUrl == textVal);
+                                return ListView.builder(
+                                  controller: _scrollController,
+                                  reverse: true,
+                                  padding: const EdgeInsets.all(12),
+                                  itemCount: docs.length,
+                                  itemBuilder: (context, index) {
+                                    final msg = docs[index].data() as Map<String, dynamic>;
+                                    final isMe = msg["sender"] == activeUserName;
+                                    final bool isVoice = msg["isVoice"] == true;
+                                    final String textVal = msg["text"] ?? "";
+                                    final bool isPlayingThis = (_currentlyPlayingVoiceUrl == textVal);
 
-                                        var timestamp = msg['timestamp'] as Timestamp?;
-                                        String dateStr = 'منذ قليل';
-                                        if (timestamp != null) {
-                                          DateTime dt = timestamp.toDate();
-                                          String hour = dt.hour > 12 ? '${dt.hour - 12}' : '${dt.hour == 0 ? 12 : dt.hour}';
-                                          String minute = dt.minute.toString().padLeft(2, '0');
-                                          String period = dt.hour >= 12 ? 'م' : 'ص';
-                                          dateStr = '${dt.year}/${dt.month}/${dt.day} - $hour:$minute $period';
-                                        }
+                                    var timestamp = msg['timestamp'] as Timestamp?;
+                                    String dateStr = 'منذ قليل';
+                                    if (timestamp != null) {
+                                      DateTime dt = timestamp.toDate();
+                                      String hour = dt.hour > 12 ? '${dt.hour - 12}' : '${dt.hour == 0 ? 12 : dt.hour}';
+                                      String minute = dt.minute.toString().padLeft(2, '0');
+                                      String period = dt.hour >= 12 ? 'م' : 'ص';
+                                      dateStr = '${dt.year}/${dt.month}/${dt.day} - $hour:$minute $period';
+                                    }
 
-                                        return Align(
-                                          alignment: isMe ? Alignment.centerLeft : Alignment.centerRight,
-                                          child: Container(
-                                            margin: const EdgeInsets.symmetric(vertical: 4),
-                                            padding: const EdgeInsets.all(10),
-                                            constraints: BoxConstraints(maxWidth: isMobile ? screenWidth * 0.75 : 350),
-                                            decoration: BoxDecoration(
-                                              color: isMe ? Colors.purple.shade700 : Colors.white,
-                                              borderRadius: BorderRadius.circular(12),
-                                              boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
-                                            ),
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              mainAxisSize: MainAxisSize.min,
+                                    return Align(
+                                      alignment: isMe ? Alignment.centerLeft : Alignment.centerRight,
+                                      child: Container(
+                                        margin: const EdgeInsets.symmetric(vertical: 4),
+                                        padding: const EdgeInsets.all(10),
+                                        constraints: BoxConstraints(maxWidth: isMobile ? screenWidth * 0.75 : 350),
+                                        decoration: BoxDecoration(
+                                          color: isMe ? Colors.purple.shade700 : Colors.white,
+                                          borderRadius: BorderRadius.circular(12),
+                                          boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 2)],
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                               children: [
-                                                Row(
-                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                                  children: [
-                                                    Text(
-                                                      msg["sender"] ?? "مجهول",
-                                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isMe ? Colors.white70 : Colors.purple),
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Text(
-                                                      dateStr,
-                                                      style: TextStyle(fontSize: 9, color: isMe ? Colors.white60 : Colors.grey),
-                                                    ),
-                                                  ],
+                                                Text(
+                                                  msg["sender"] ?? "مجهول",
+                                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isMe ? Colors.white70 : Colors.purple),
                                                 ),
-                                                const SizedBox(height: 4),
-                                                isVoice
-                                                    ? Row(
-                                                        mainAxisSize: MainAxisSize.min,
-                                                        children: [
-                                                          IconButton(
-                                                            icon: Icon(
-                                                              isPlayingThis ? Icons.pause_circle_filled : Icons.play_circle_fill,
-                                                              color: Colors.greenAccent,
-                                                              size: 28,
-                                                            ),
-                                                            onPressed: () => _playVoiceMessage(textVal),
-                                                          ),
-                                                          Text(
-                                                            isPlayingThis ? "جاري التشغيل... 🔊" : "تسجيل صوتي 🎤",
-                                                            style: TextStyle(fontSize: 13, color: isMe ? Colors.white : Colors.black87),
-                                                          ),
-                                                        ],
-                                                      )
-                                                    : (msg["isImage"] == true
-                                                        ? ClipRRect(
-                                                            borderRadius: BorderRadius.circular(8),
-                                                            child: InkWell(
-                                                              onTap: () => MediaHandlers.showImageDialog(context, base64Decode(textVal.split(',').last)),
-                                                              child: Image.memory(
-                                                                base64Decode(textVal.split(',').last),
-                                                                width: 140,
-                                                                height: 140,
-                                                                fit: BoxFit.cover,
-                                                              ),
-                                                            ),
-                                                          )
-                                                        : Text(textVal, style: TextStyle(fontSize: 15, color: isMe ? Colors.white : Colors.black87))),
+                                                const SizedBox(width: 8),
+                                                Text(dateStr, style: TextStyle(fontSize: 9, color: isMe ? Colors.white60 : Colors.grey)),
                                               ],
                                             ),
+                                            const SizedBox(height: 4),
+                                            isVoice
+                                                ? Row(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    children: [
+                                                      IconButton(
+                                                        icon: Icon(
+                                                          isPlayingThis ? Icons.pause_circle_filled : Icons.play_circle_fill,
+                                                          color: Colors.greenAccent,
+                                                          size: 28,
+                                                        ),
+                                                        onPressed: () => _playVoiceMessage(textVal),
+                                                      ),
+                                                      Text(
+                                                        isPlayingThis ? "جاري التشغيل... 🔊" : "تسجيل صوتي 🎤",
+                                                        style: TextStyle(fontSize: 13, color: isMe ? Colors.white : Colors.black87),
+                                                      ),
+                                                    ],
+                                                  )
+                                                : (msg["isImage"] == true
+                                                    ? ClipRRect(
+                                                        borderRadius: BorderRadius.circular(8),
+                                                        child: InkWell(
+                                                          onTap: () => MediaHandlers.showImageDialog(context, base64Decode(textVal.split(',').last)),
+                                                          child: Image.memory(
+                                                            base64Decode(textVal.split(',').last),
+                                                            width: 140,
+                                                            height: 140,
+                                                            fit: BoxFit.cover,
+                                                          ),
+                                                        ),
+                                                      )
+                                                    : Text(textVal, style: TextStyle(fontSize: 15, color: isMe ? Colors.white : Colors.black87))),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              },
+                            ),
+                          ),
+
+                          if (_minimizedChatUsers.isNotEmpty)
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              color: Colors.orange.shade100,
+                              child: SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: Row(
+                                  children: _minimizedChatUsers.map((user) {
+                                    return StreamBuilder<QuerySnapshot>(
+                                      stream: _firestore.collection('inbox')
+                                          .where('sender', isEqualTo: user)
+                                          .where('receiver', isEqualTo: activeUserName)
+                                          .where('isRead', isEqualTo: false)
+                                          .snapshots(),
+                                      builder: (context, minSnap) {
+                                        final hasUnread = minSnap.hasData && minSnap.data!.docs.isNotEmpty;
+
+                                        return Container(
+                                          margin: const EdgeInsets.symmetric(horizontal: 4),
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: hasUnread ? Colors.red.shade100 : Colors.orange.shade200,
+                                            borderRadius: BorderRadius.circular(8),
+                                            border: Border.all(color: hasUnread ? Colors.red : Colors.orange.shade400, width: hasUnread ? 1.5 : 1),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(Icons.chat, size: 14, color: hasUnread ? Colors.red.shade700 : Colors.orange.shade800),
+                                              const SizedBox(width: 6),
+                                              Text(
+                                                hasUnread ? "$user (رسالة جديدة 💌)" : user,
+                                                style: TextStyle(
+                                                  fontSize: 11,
+                                                  fontWeight: FontWeight.bold,
+                                                  color: hasUnread ? Colors.red.shade900 : Colors.orange.shade900,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              InkWell(
+                                                onTap: () => _openPrivateChat(user),
+                                                child: Container(
+                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.orange.shade700,
+                                                    borderRadius: BorderRadius.circular(4),
+                                                  ),
+                                                  child: const Text("استعادة", style: TextStyle(color: Colors.white, fontSize: 10)),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 4),
+                                              InkWell(
+                                                onTap: () => setState(() => _minimizedChatUsers.remove(user)),
+                                                child: const Icon(Icons.close, size: 14, color: Colors.grey),
+                                              ),
+                                            ],
                                           ),
                                         );
                                       },
                                     );
-                                  },
+                                  }).toList(),
                                 ),
                               ),
+                            ),
 
-                              ChatInputControllerWidget(
-                                textController: _messageController,
-                                onSendText: _sendPublicMessage,
-                                onPickImage: () async {
-                                  await MediaHandlers.pickAndSendImage((path, isImg) async {
-                                    await _firestore.collection('messages').add({
-                                      "sender": activeUserName,
-                                      "text": path,
-                                      "isImage": isImg,
-                                      "isVoice": false,
-                                      "timestamp": FieldValue.serverTimestamp(),
-                                    });
-                                    _cleanupPublicMessages();
-                                  });
-                                },
-                                onSendVoice: (audioData) async {
+                          ChatInputControllerWidget(
+                            textController: _messageController,
+                            onSendText: () async {
+                              if (_messageController.text.trim().isNotEmpty) {
+                                String msgText = _messageController.text.trim();
+                                _messageController.clear();
+                                if (_activePrivateChatUser == null) {
                                   await _firestore.collection('messages').add({
                                     "sender": activeUserName,
-                                    "text": audioData,
+                                    "text": msgText,
                                     "isImage": false,
-                                    "isVoice": true,
+                                    "isVoice": false,
                                     "timestamp": FieldValue.serverTimestamp(),
                                   });
                                   _cleanupPublicMessages();
-                                },
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-
-            // **طبقة النوافذ الخاصة العائمة بحرية تامة فوق الهيدر البنفسجي وكل الشاشة**
-            ..._activeChatWindows.where((memberName) => !(_minimizedWindows[memberName] ?? false)).map((memberName) {
-              double safeTop = _windowPositions[memberName]?.dy ?? 10.0;
-              double safeLeft = _windowPositions[memberName]?.dx ?? 10.0;
-
-              if (safeTop < 0) safeTop = 0;
-              if (safeTop > screenHeight - 100) safeTop = screenHeight - 100;
-              if (safeLeft < 0) safeLeft = 0;
-              if (safeLeft > screenWidth - 50) safeLeft = screenWidth - 50;
-
-              return Positioned(
-                left: safeLeft,
-                top: safeTop,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onPanUpdate: (details) {
-                    setState(() {
-                      _windowPositions[memberName] = Offset(
-                        safeLeft + details.delta.dx,
-                        safeTop + details.delta.dy,
-                      );
-                    });
-                  },
-                  child: Material(
-                    color: Colors.transparent,
-                    child: StreamBuilder<QuerySnapshot>(
-                      stream: _firestore.collection('inbox').orderBy('timestamp', descending: false).snapshots(),
-                      builder: (context, snapshot) {
-                        final allDocs = snapshot.data?.docs ?? [];
-                        final messages = allDocs.map((doc) => doc.data() as Map<String, dynamic>).where((msg) {
-                          String sender = msg['sender'] ?? '';
-                          String receiver = msg['receiver'] ?? '';
-                          return (sender == activeUserName && receiver == memberName) ||
-                                 (sender == memberName && receiver == activeUserName);
-                        }).toList();
-
-                        for (var doc in allDocs) {
-                          final data = doc.data() as Map<String, dynamic>;
-                          if (data['sender'] == memberName && data['receiver'] == activeUserName && (data['isRead'] == false || data['isRead'] == null)) {
-                            doc.reference.update({'isRead': true});
-                          }
-                        }
-
-                        return FloatingChatBox(
-                          memberName: memberName,
-                          currentUserName: activeUserName,
-                          messages: messages,
-                          isMinimized: false,
-                          onClose: () => _closePrivateChat(memberName),
-                          onMinimize: () => _toggleMinimizeChat(memberName),
-                          onSend: (text, isImg, isVoiceMsg) async {
-                            await _firestore.collection('inbox').add({
-                              "sender": activeUserName, 
-                              "receiver": memberName, 
-                              "text": text,
-                              "isImage": isImg,
-                              "isVoice": isVoiceMsg,
-                              "isRead": false, 
-                              "timestamp": FieldValue.serverTimestamp(),
-                            });
-                            _cleanupPrivateMessages(memberName); 
-                          },
-                          onPickImage: () async {
-                            await MediaHandlers.pickAndSendImage((path, isImg) async {
-                              await _firestore.collection('inbox').add({
-                                "sender": activeUserName,
-                                "receiver": memberName,
-                                "text": path,
-                                "isImage": isImg,
-                                "isVoice": false,
-                                "isRead": false,
-                                "timestamp": FieldValue.serverTimestamp(),
+                                } else {
+                                  await _firestore.collection('inbox').add({
+                                    "sender": activeUserName,
+                                    "receiver": _activePrivateChatUser,
+                                    "text": msgText,
+                                    "isImage": false,
+                                    "isVoice": false,
+                                    "isRead": false,
+                                    "timestamp": FieldValue.serverTimestamp(),
+                                  });
+                                  _cleanupPrivateMessages(_activePrivateChatUser!);
+                                }
+                              }
+                            },
+                            onPickImage: () async {
+                              await MediaHandlers.pickAndSendImage((path, isImg) async {
+                                if (_activePrivateChatUser == null) {
+                                  await _firestore.collection('messages').add({
+                                    "sender": activeUserName,
+                                    "text": path,
+                                    "isImage": isImg,
+                                    "isVoice": false,
+                                    "timestamp": FieldValue.serverTimestamp(),
+                                  });
+                                  _cleanupPublicMessages();
+                                } else {
+                                  await _firestore.collection('inbox').add({
+                                    "sender": activeUserName,
+                                    "receiver": _activePrivateChatUser,
+                                    "text": path,
+                                    "isImage": isImg,
+                                    "isVoice": false,
+                                    "isRead": false,
+                                    "timestamp": FieldValue.serverTimestamp(),
+                                  });
+                                  _cleanupPrivateMessages(_activePrivateChatUser!);
+                                }
                               });
-                              _cleanupPrivateMessages(memberName);
-                            });
-                          },
-                        );
-                      },
+                            },
+                            onSendVoice: (audioData) async {
+                              if (_activePrivateChatUser == null) {
+                                await _firestore.collection('messages').add({
+                                  "sender": activeUserName,
+                                  "text": audioData,
+                                  "isImage": false,
+                                  "isVoice": true,
+                                  "timestamp": FieldValue.serverTimestamp(),
+                                });
+                                _cleanupPublicMessages();
+                              } else {
+                                await _firestore.collection('inbox').add({
+                                  "sender": activeUserName,
+                                  "receiver": _activePrivateChatUser,
+                                  "text": audioData,
+                                  "isImage": false,
+                                  "isVoice": true,
+                                  "isRead": false,
+                                  "timestamp": FieldValue.serverTimestamp(),
+                                });
+                                _cleanupPrivateMessages(_activePrivateChatUser!);
+                              }
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              );
-            }),
+                ],
+              ),
+            ),
           ],
         ),
       ),
