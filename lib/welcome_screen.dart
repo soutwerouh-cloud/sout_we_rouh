@@ -9,15 +9,79 @@ import 'blog_screen.dart';
 import 'admin_blog_screen.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:audioplayers/audioplayers.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({super.key});
+
+  @override
+  State<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends State<WelcomeScreen> with SingleTickerProviderStateMixin {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool isQuranPlaying = false;
+  
+  // تم تحديث الرابط إلى البث المباشر الصافي لإذاعة القرآن الكريم من القاهرة
+  final String quranStreamUrl = "https://n08.radiojar.com/8s5u5tpdtwzuv";
+  
+  late AnimationController _waveController;
+
+  @override
+  void initState() {
+    super.initState();
+    _waveController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+  }
 
   Future<void> _launchURL(String urlString) async {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       throw Exception('Could not launch $url');
     }
+  }
+
+  void _toggleQuranStream() async {
+    try {
+      if (isQuranPlaying) {
+        await _audioPlayer.stop();
+        _waveController.stop();
+        setState(() {
+          isQuranPlaying = false;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('تم إيقاف إذاعة القرآن الكريم ⏹️'), duration: Duration(seconds: 2)),
+          );
+        }
+      } else {
+        await _audioPlayer.play(UrlSource(quranStreamUrl));
+        _waveController.repeat(reverse: true);
+        setState(() {
+          isQuranPlaying = true;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('جاري تشغيل إذاعة القرآن الكريم 📻✨', style: TextStyle(fontWeight: FontWeight.bold)), backgroundColor: Colors.green, duration: Duration(seconds: 3)),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('تعذر تشغيل البث حالياً، يجدر المحاولة لاحقاً ❌'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    _waveController.dispose();
+    super.dispose();
   }
 
   void _showAdminPasswordDialog(BuildContext context) {
@@ -87,326 +151,363 @@ class WelcomeScreen extends StatelessWidget {
             ),
           ),
           child: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // الشعار بحجم أكبر وواضح
-                  Image.asset(
-                    'assets/logo.png',
-                    height: 125, 
-                    width: 125,
-                    fit: BoxFit.contain,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.mic_rounded,
-                      size: 80,
-                      color: Colors.white,
-                    ),
-                  ),
-                  
-                  Column(
+            child: Stack(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
-                      const Text(
-                        "أهلاً بكم في تطبيق",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 15, color: Colors.white),
+                      Image.asset(
+                        'assets/logo.png',
+                        height: 110,
+                        width: 110,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => const Icon(
+                          Icons.mic_rounded,
+                          size: 70,
+                          color: Colors.white,
+                        ),
                       ),
-                      const SizedBox(height: 2),
-                      const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      
+                      Column(
                         children: [
-                          Text("✨", style: TextStyle(fontSize: 15)),
-                          SizedBox(width: 4),
-                          Text(
-                            "صوت وروح",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
+                          const Text(
+                            "أهلاً بكم في تطبيق",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 15, color: Colors.white),
                           ),
-                          SizedBox(width: 4),
-                          Text("✨", style: TextStyle(fontSize: 15)),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      const Text(
-                        "منصتكم الأولى لاكتشاف ودعم أروع المواهب في الغناء، الشعر، والتلحين.",
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 12, color: Colors.white70, height: 1.2),
-                      ),
-                    ],
-                  ),
-
-                  // أزرار المدونة، النشر، والألعاب بجانب بعضها
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF00BFA5),
-                          foregroundColor: Colors.white,
-                          elevation: 3,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (context) => const BlogScreen()),
-                          );
-                        },
-                        icon: const Icon(Icons.article_rounded, size: 16),
-                        label: const Text("المدونة", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.purple.shade800,
-                          elevation: 3,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        ),
-                        onPressed: () {
-                          _showAdminPasswordDialog(context);
-                        },
-                        icon: const Icon(Icons.edit_note_rounded, size: 16),
-                        label: const Text("النشر", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton.icon(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFFF6F00),
-                          foregroundColor: Colors.white,
-                          elevation: 3,
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                        ),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('قريباً قسم الألعاب (Games)!')),
-                          );
-                        },
-                        icon: const Icon(Icons.games_rounded, size: 16),
-                        label: const Text("الألعاب", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      ),
-                    ],
-                  ),
-                  
-                  // الأزرار الأساسية للتطبيق
-                  Column(
-                    children: [
-                      SizedBox(
-                        width: double.infinity,
-                        height: 45,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0xFF7B1FA2),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                            elevation: 3,
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const SubscriptionScreen(),
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            "تسجيل موهبة جديدة (مع الاشتراك)",
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      SizedBox(
-                        width: double.infinity,
-                        height: 45,
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: const BorderSide(color: Colors.white, width: 1.5),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => const MainNavigationScreen(),
-                              ),
-                            );
-                          },
-                          child: const Text(
-                            "تصفح التطبيق مباشرة",
-                            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      SizedBox(
-                        width: double.infinity,
-                        height: 45,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF00BFA5),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                            elevation: 3,
-                          ),
-                          onPressed: () {
-                            showChatRadioLoginDialog(context);
-                          },
-                          child: const Row(
+                          const SizedBox(height: 2),
+                          const Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
+                              Text("✨", style: TextStyle(fontSize: 15)),
+                              SizedBox(width: 4),
                               Text(
-                                "استماع راديو نجوم إف إم والشات",
-                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                "صوت وروح",
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
-                              SizedBox(width: 8),
-                              Text("📻", style: TextStyle(fontSize: 15)),
+                              SizedBox(width: 4),
+                              Text("✨", style: TextStyle(fontSize: 15)),
                             ],
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-
-                      SizedBox(
-                        width: double.infinity,
-                        height: 45,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color.fromRGBO(74, 20, 140, 0.6),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(25),
-                            ),
-                            side: const BorderSide(color: Colors.purple, width: 1),
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ArtistsScreen(), 
-                              ),
-                            );
-                          },
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text("🎵", style: TextStyle(fontSize: 15)),
-                              SizedBox(width: 8),
-                              Text(
-                                "اكتشف أروع المواهب الغنائية والشعرية",
-                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  // البريد والفوتر
-                  Column(
-                    children: [
-                      const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.email_outlined, color: Colors.white70, size: 15),
-                          SizedBox(width: 6),
-                          Text(
-                            "soutwerouh@gmail.com",
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.white70,
-                              fontWeight: FontWeight.w500,
-                            ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            "منصتكم الأولى لاكتشاف ودعم أروع المواهب في الغناء، الشعر، والتلحين.",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(fontSize: 12, color: Colors.white70, height: 1.2),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 6),
-
-                      Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 6.0,
-                        runSpacing: 4.0,
-                        children: [
-                          ActionChip(
-                            backgroundColor: const Color(0xFF1877F2),
-                            avatar: const Icon(Icons.facebook, color: Colors.white, size: 16),
-                            label: const Text('فيسبوك', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
-                            onPressed: () => _launchURL('https://www.facebook.com/soutwerouh.official'),
-                          ),
-                          ActionChip(
-                            backgroundColor: const Color(0xFFE4405F),
-                            avatar: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
-                            label: const Text('إنستجرام', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
-                            onPressed: () => _launchURL('https://www.instagram.com/soutwerouh.official/'),
-                          ),
-                          ActionChip(
-                            backgroundColor: Colors.black,
-                            avatar: const Icon(Icons.music_note, color: Colors.white, size: 14),
-                            label: const Text('تيك توك', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
-                            onPressed: () => _launchURL('https://www.tiktok.com/@soutwerouh'),
-                          ),
-                          ActionChip(
-                            backgroundColor: const Color(0xFFFF0000),
-                            avatar: const Icon(Icons.video_library, color: Colors.white, size: 14),
-                            label: const Text('يوتيوب', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
-                            onPressed: () => _launchURL('https://www.youtube.com/@soutwerouh'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
 
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          TextButton(
-                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(50, 20)),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF00BFA5),
+                              foregroundColor: Colors.white,
+                              elevation: 3,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            ),
                             onPressed: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(builder: (context) => const AboutScreen()),
+                                MaterialPageRoute(builder: (context) => const BlogScreen()),
                               );
                             },
-                            child: const Text(
-                              'من نحن',
-                              style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                            icon: const Icon(Icons.article_rounded, size: 16),
+                            label: const Text("المدونة", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: Colors.purple.shade800,
+                              elevation: 3,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            ),
+                            onPressed: () {
+                              _showAdminPasswordDialog(context);
+                            },
+                            icon: const Icon(Icons.edit_note_rounded, size: 16),
+                            label: const Text("النشر", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFFF6F00),
+                              foregroundColor: Colors.white,
+                              elevation: 3,
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                            ),
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('قريباً قسم الألعاب (Games)!')),
+                              );
+                            },
+                            icon: const Icon(Icons.games_rounded, size: 16),
+                            label: const Text("الألعاب", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          ),
+                        ],
+                      ),
+                      
+                      Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            height: 45,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFF7B1FA2),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                                elevation: 3,
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const SubscriptionScreen(),
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                "تسجيل موهبة جديدة (مع الاشتراك)",
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                              ),
                             ),
                           ),
-                          const Text('•', style: TextStyle(color: Colors.white70)),
-                          TextButton(
-                            style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(50, 20)),
-                            onPressed: () {
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (context) => const PrivacyScreen()),
-                              );
-                            },
-                            child: const Text(
-                              'سياسة الخصوصية',
-                              style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                          const SizedBox(height: 8),
+
+                          SizedBox(
+                            width: double.infinity,
+                            height: 45,
+                            child: OutlinedButton(
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Colors.white, width: 1.5),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => const MainNavigationScreen(),
+                                  ),
+                                );
+                              },
+                              child: const Text(
+                                "تصفح التطبيق مباشرة",
+                                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
                             ),
+                          ),
+                          const SizedBox(height: 8),
+
+                          SizedBox(
+                            width: double.infinity,
+                            height: 45,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF00BFA5),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                                elevation: 3,
+                              ),
+                              onPressed: () {
+                                showChatRadioLoginDialog(context);
+                              },
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    "استماع راديو نجوم إف إم والشات",
+                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+                                  ),
+                                  SizedBox(width: 8),
+                                  Text("📻", style: TextStyle(fontSize: 15)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+
+                          SizedBox(
+                            width: double.infinity,
+                            height: 45,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color.fromRGBO(74, 20, 140, 0.6),
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(25),
+                                ),
+                                side: const BorderSide(color: Colors.purple, width: 1),
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => ArtistsScreen(), 
+                                  ),
+                                );
+                              },
+                              child: const Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text("🎵", style: TextStyle(fontSize: 15)),
+                                  SizedBox(width: 8),
+                                  Text(
+                                    "اكتشف أروع المواهب الغنائية والشعرية",
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      Column(
+                        children: [
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.email_outlined, color: Colors.white70, size: 15),
+                              SizedBox(width: 6),
+                              Text(
+                                "soutwerouh@gmail.com",
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white70,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+
+                          Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: 6.0,
+                            runSpacing: 4.0,
+                            children: [
+                              ActionChip(
+                                backgroundColor: const Color(0xFF1877F2),
+                                avatar: const Icon(Icons.facebook, color: Colors.white, size: 16),
+                                label: const Text('فيسبوك', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                                onPressed: () => _launchURL('https://www.facebook.com/soutwerouh.official'),
+                              ),
+                              ActionChip(
+                                backgroundColor: const Color(0xFFE4405F),
+                                avatar: const Icon(Icons.camera_alt, color: Colors.white, size: 14),
+                                label: const Text('إنستجرام', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                                onPressed: () => _launchURL('https://www.instagram.com/soutwerouh.official/'),
+                              ),
+                              ActionChip(
+                                backgroundColor: Colors.black,
+                                avatar: const Icon(Icons.music_note, color: Colors.white, size: 14),
+                                label: const Text('تيك توك', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                                onPressed: () => _launchURL('https://www.tiktok.com/@soutwerouh'),
+                              ),
+                              ActionChip(
+                                backgroundColor: const Color(0xFFFF0000),
+                                avatar: const Icon(Icons.video_library, color: Colors.white, size: 14),
+                                label: const Text('يوتيوب', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 11)),
+                                onPressed: () => _launchURL('https://www.youtube.com/@soutwerouh'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              TextButton(
+                                style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(50, 20)),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const AboutScreen()),
+                                  );
+                                },
+                                child: const Text(
+                                  'من نحن',
+                                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                              const Text('•', style: TextStyle(color: Colors.white70)),
+                              TextButton(
+                                style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(50, 20)),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(builder: (context) => const PrivacyScreen()),
+                                  );
+                                },
+                                child: const Text(
+                                  'سياسة الخصوصية',
+                                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+
+                // زر إذاعة القرآن الكريم (زر تفاعلي بوضوح يوضح حالة التشغيل والإيقاف)
+                Positioned(
+                  top: 15,
+                  right: 20,
+                  child: AnimatedBuilder(
+                    animation: _waveController,
+                    builder: (context, child) {
+                      return ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isQuranPlaying ? const Color(0xFF1B5E20) : const Color(0xFF6A1B9A),
+                          foregroundColor: Colors.white,
+                          elevation: 6,
+                          shadowColor: Colors.black.withOpacity(0.5),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: isQuranPlaying ? Colors.amberAccent : Colors.white,
+                              width: isQuranPlaying ? 2.5 : 1.5,
+                            ),
+                          ),
+                        ),
+                        onPressed: _toggleQuranStream,
+                        icon: Icon(
+                          isQuranPlaying ? Icons.stop_circle_rounded : Icons.play_circle_filled_rounded,
+                          size: 20,
+                          color: isQuranPlaying ? Colors.amberAccent : Colors.white,
+                        ),
+                        label: Text(
+                          isQuranPlaying ? "إيقاف الإذاعة ⏹️" : "إذاعة القرآن الكريم 📻",
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -415,7 +516,6 @@ class WelcomeScreen extends StatelessWidget {
   }
 }
 
-// نافذة تسجيل الدخول للشات والراديو
 void showChatRadioLoginDialog(BuildContext context) {
   final TextEditingController nameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -440,7 +540,10 @@ void showChatRadioLoginDialog(BuildContext context) {
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('إلغاء')),
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('إلغاء'),
+        ),
         ElevatedButton(
           style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7B1FA2)),
           onPressed: () async {

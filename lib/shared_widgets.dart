@@ -84,11 +84,10 @@ Widget buildTalentListWithAllWorks(BuildContext context, String categoryKeyword,
                   }
                 }
 
-                if (workTitles.isEmpty) {
-                  return const SizedBox.shrink();
-                }
-
-                String worksText = 'الأعمال: ${workTitles.join(' - ')}';
+                // تم إلغاء شرط الإخفاء (SizedBox.shrink) لكي تظهر الموهبة حتى لو لم تقم برفع أعمال بعد
+                String worksText = workTitles.isEmpty 
+                    ? 'الأعمال: لا توجد أعمال مرفوعة بعد' 
+                    : 'الأعمال: ${workTitles.join(' - ')}';
 
                 return Center(
                   child: SizedBox(
@@ -108,7 +107,6 @@ Widget buildTalentListWithAllWorks(BuildContext context, String categoryKeyword,
                               children: [
                                 Text(talent.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF7B1FA2))),
                                 const SizedBox(width: 8),
-                                // عرض الصورة الشخصية للموهبة بدلاً من الأيقونة الثابتة
                                 CircleAvatar(
                                   radius: 14,
                                   backgroundColor: Colors.purple.shade100,
