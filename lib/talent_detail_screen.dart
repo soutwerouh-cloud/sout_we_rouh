@@ -200,7 +200,7 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم اختيار ملف الأغنية بنجاح 🎵'), backgroundColor: Colors.green),
+            const SnackBar(content: Text('تم اختيار ملف الإلقاء الصوتي بنجاح 🎵'), backgroundColor: Colors.green),
           );
         }
       }
@@ -302,7 +302,7 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
   void _addNewWork() async {
     if (_workTitleController.text.isEmpty || (_selectedPlatformFile == null && _audioLinkController.text.isEmpty && _workContentController.text.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('الرجاء إدخال عنوان العمل ووضع الملف أو الرابط ❌'), backgroundColor: Colors.red),
+        const SnackBar(content: Text('الرجاء إدخال عنوان العمل ووضع المحتوى أو الملف الصوتي ❌'), backgroundColor: Colors.red),
       );
       return;
     }
@@ -348,7 +348,7 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم نشر العمل بنجاح ✅'), backgroundColor: Colors.green),
+          const SnackBar(content: Text('تم نشر العمل والإلقاء الصوتي بنجاح ✅'), backgroundColor: Colors.green),
         );
       }
     } catch (e) {
@@ -461,7 +461,7 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
                       children: [
                         Row(
                           children: [
-                            Icon(isPoet ? Icons.menu_book : Icons.music_note, color: const Color(0xFF7B1FA2)),
+                            const Icon(Icons.menu_book, color: Color(0xFF7B1FA2)),
                             const SizedBox(width: 8),
                             Text(
                               _selectedWorkData!['title'] ?? '',
@@ -482,15 +482,7 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
                     ),
                     const Divider(),
                     const SizedBox(height: 8),
-                    if (isPoet && (_selectedWorkData!['content'] ?? '').isNotEmpty) ...[
-                      Text(
-                        _selectedWorkData!['content'],
-                        style: const TextStyle(fontSize: 16, color: Colors.black87, height: 1.8),
-                        textAlign: TextAlign.right,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    if (!isPoet && (_selectedWorkData!['audioUrl'] ?? '').isNotEmpty) ...[
+                    if ((_selectedWorkData!['audioUrl'] ?? '').isNotEmpty) ...[
                       ElevatedButton.icon(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF7B1FA2),
@@ -503,15 +495,17 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
                           }
                         },
                         icon: Icon(_currentlyPlayingWorkId == _selectedWorkId ? Icons.pause : Icons.play_arrow),
-                        label: Text(_currentlyPlayingWorkId == _selectedWorkId ? 'إيقاف الصوت ⏹' : 'استماع للعمل الصوتي 🎧'),
+                        label: Text(_currentlyPlayingWorkId == _selectedWorkId ? 'إيقاف الإلقاء ⏹' : 'استماع للإلقاء الصوتي 🎧'),
                       ),
                       const SizedBox(height: 12),
-                      if ((_selectedWorkData!['content'] ?? '').isNotEmpty)
-                        Text(
-                          _selectedWorkData!['content'],
-                          style: const TextStyle(fontSize: 14, color: Colors.black54),
-                          textAlign: TextAlign.right,
-                        ),
+                    ],
+                    if ((_selectedWorkData!['content'] ?? '').isNotEmpty) ...[
+                      Text(
+                        _selectedWorkData!['content'],
+                        style: const TextStyle(fontSize: 16, color: Colors.black87, height: 1.8),
+                        textAlign: TextAlign.right,
+                      ),
+                      const SizedBox(height: 16),
                     ],
                   ],
                 ),
@@ -549,25 +543,18 @@ class _TalentDetailScreenState extends State<TalentDetailScreen> {
                   return const Center(child: Text('لا توجد أعمال منشورة حتى الآن', style: TextStyle(color: Colors.grey)));
                 }
 
+                // عرض جميع أعمال الشاعر بغض النظر عن كونها نصية أو صوتية لكي تظهر قصائد الإلقاء هنا وفي أحدث الأعمال معاً
                 var works = snapshot.data!.docs.where((doc) {
-                  var data = doc.data() as Map<String, dynamic>;
-                  String? audioUrl = data['audioUrl'];
-                  bool hasAudio = audioUrl != null && audioUrl.isNotEmpty;
-
-                  if (isPoet) {
-                    return !hasAudio; 
-                  } else {
-                    return hasAudio; 
-                  }
+                  return true; 
                 }).toList();
 
                 if (works.isEmpty) {
-                  return Center(
+                  return const Center(
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      padding: EdgeInsets.all(16.0),
                       child: Text(
-                        isPoet ? 'لا توجد قصائد كتابية منشورة حتى الآن 📜' : 'لا توجد أعمال صوتية منشورة حتى الآن 🎵',
-                        style: const TextStyle(color: Colors.grey, fontSize: 14),
+                        'لا توجد أعمال منشورة حتى الآن 📜🎵',
+                        style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                     ),
                   );

@@ -45,7 +45,7 @@ class GuideScreen extends StatelessWidget {
                 var data = doc.data() as Map<String, dynamic>;
                 var talent = TalentModel.fromMap(data, doc.id);
                 
-                // تحديد ما إذا كانت هذه البطاقة خاصة بالشعر أو الغناء بناءً على قسم الموهبة في المستند
+                // تحديد ما إذا كان الكارت الحالي يتبع قسم الشعر أو الغناء بدقة
                 bool isCardPoet = talent.category.contains('شعر') || talent.category.contains('شع');
 
                 return StreamBuilder<QuerySnapshot>(
@@ -62,17 +62,22 @@ class GuideScreen extends StatelessWidget {
                         bool hasAudio = audioUrl != null && audioUrl.isNotEmpty;
                         String? title = wData['title'];
 
-                        if (title != null) {
-                          // فلترة الأعمال بناءً على قسم البطاقة (شعر يطابق القصائد بدون صوت، غناء يطابق الأعمال الصوتية)
-                          if (isCardPoet && !hasAudio) {
-                            workTitles.add('📜 $title');
-                          } else if (!isCardPoet && hasAudio) {
-                            workTitles.add('🎵 $title');
+                        if (title != null && title.isNotEmpty) {
+                          // فلترة صارمة: مواهب الشعر تعارض أعمالها (سواء صوتية أو كتابية تخص الشعر)، ومواهب الغناء تعرض أعمالها الصوتية فقط
+                          if (isCardPoet) {
+                            // إذا كان الشاعر في قسم الشعر، نعرض أعماله (سواء معها صوت أو كتابية) بشرط أن تكون تابعة للشعر
+                            workTitles.add(hasAudio ? '🎵 $title' : '📜 $title');
+                          } else {
+                            // إذا كان في قسم الغناء، نعرض الأعمال الصوتية الخاصة بالغناء فقط
+                            if (hasAudio) {
+                              workTitles.add('🎵 $title');
+                            }
                           }
                         }
                       }
                     }
 
+                    // إذا لم تكن هناك أعمال مطابقة لهذا القسم بالذات، نتخطى عرض الكارت أو نوضح أنه لا توجد أعمال في هذا القسم
                     String worksText = workTitles.isNotEmpty ? 'الأعمال: ${workTitles.join(' - ')}' : 'لا توجد أعمال في هذا القسم';
 
                     return Center(
@@ -91,7 +96,6 @@ class GuideScreen extends StatelessWidget {
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    // عرض اسم الموهبة وبجانبها صورتها الشخصية المرتبطة بالحساب بشكل متناسق
                                     Row(
                                       children: [
                                         SizedBox(

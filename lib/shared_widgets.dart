@@ -73,18 +73,19 @@ Widget buildTalentListWithAllWorks(BuildContext context, String categoryKeyword,
                     var wData = wDoc.data() as Map<String, dynamic>;
                     String? audioUrl = wData['audioUrl'];
                     bool hasAudio = audioUrl != null && audioUrl.isNotEmpty;
+                    String title = wData['title'] ?? '';
 
-                    bool isPoetryCategory = categoryKeyword.contains('شعر');
-                    
-                    if (isPoetryCategory && !hasAudio && wData['title'] != null) {
-                      workTitles.add('📜 ${wData['title']}');
-                    } else if (!isPoetryCategory && hasAudio && wData['title'] != null) {
-                      workTitles.add('🎵 ${wData['title']}');
+                    if (title.isNotEmpty) {
+                      // جلب وعرض كافة أعمال الشاعر الصوتية والكتابية معاً تحت اسمه مباشرة بدون شروط مقيدة
+                      if (hasAudio) {
+                        workTitles.add('🎵 $title');
+                      } else {
+                        workTitles.add('📜 $title');
+                      }
                     }
                   }
                 }
 
-                // تم إلغاء شرط الإخفاء (SizedBox.shrink) لكي تظهر الموهبة حتى لو لم تقم برفع أعمال بعد
                 String worksText = workTitles.isEmpty 
                     ? 'الأعمال: لا توجد أعمال مرفوعة بعد' 
                     : 'الأعمال: ${workTitles.join(' - ')}';

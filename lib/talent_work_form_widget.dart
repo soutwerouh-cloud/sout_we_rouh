@@ -28,7 +28,7 @@ class TalentWorkFormWidget extends StatelessWidget {
     required this.onRequireAuth,
   });
 
-  // نافذة ذكية مخصصة للception ولصق النصوص الطويلة والقصائد لتجاوز قيود متصفحات الويب
+  // نافذة ذكية مخصصة للّصق النصوص الطويلة والقصائد لتجاوز قيود متصفحات الويب
   void _showPasteDialog(BuildContext context) {
     final TextEditingController tempController = TextEditingController();
     showDialog(
@@ -71,7 +71,7 @@ class TalentWorkFormWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return ExpansionTile(
       title: Text(
-        isPoet ? '📜 إضافة قصيدة أو عمل كتابي جديد' : '🎵 رفع الأغنية أو إدخال رابطها المباشر',
+        isPoet ? '📜 إضافة قصيدة وإلقاء صوتي جديد' : '🎵 رفع الأغنية أو إدخال رابطها المباشر',
         style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF7B1FA2)),
       ),
       children: [
@@ -85,42 +85,42 @@ class TalentWorkFormWidget extends StatelessWidget {
             }
           },
           decoration: const InputDecoration(
-            labelText: 'عنوان العمل (مثلاً: اسم الأغنية أو القصيدة)',
+            labelText: 'عنوان العمل (مثلاً: اسم القصيدة أو الأغنية)',
             border: OutlineInputBorder(),
           ),
         ),
         const SizedBox(height: 12),
-        if (!isPoet) ...[
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.deepPurple.shade700,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            ),
-            icon: const Icon(Icons.audio_file, color: Colors.white),
-            label: Text(
-              selectedPlatformFile == null ? 'اختر ملف الأغنية MP3 من الجهاز 📂' : 'تم اختيار: ${selectedPlatformFile!.name} ✅',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-            ),
-            onPressed: onPickAudioFile,
+        
+        // خانة إضافية مخصصة للإلقاء الصوتي للقصائد أو الملفات الصوتية للجميع
+        ElevatedButton.icon(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.deepPurple.shade700,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           ),
-          const SizedBox(height: 10),
-          TextField(
-            controller: audioLinkController,
-            readOnly: !isAuthorized,
-            onTap: () {
-              if (!isAuthorized) {
-                onRequireAuth();
-              }
-            },
-            decoration: const InputDecoration(
-              labelText: 'أو أدخل رابط يوتيوب / فيس بوك / أو رابط مباشر 🔗',
-              border: OutlineInputBorder(),
-            ),
+          icon: const Icon(Icons.mic, color: Colors.white),
+          label: Text(
+            selectedPlatformFile == null ? 'اختر ملف الإلقاء الصوتي MP3 🎤' : 'تم اختيار الملف: ${selectedPlatformFile!.name} ✅',
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
           ),
-          const SizedBox(height: 10),
-        ],
+          onPressed: onPickAudioFile,
+        ),
+        const SizedBox(height: 10),
+        TextField(
+          controller: audioLinkController,
+          readOnly: !isAuthorized,
+          onTap: () {
+            if (!isAuthorized) {
+              onRequireAuth();
+            }
+          },
+          decoration: const InputDecoration(
+            labelText: 'أو أدخل رابط صوتي / يوتيوب للإلقاء 🔗',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 10),
 
-        // زر لصق ذكي ومضمون 100% لتجاوز حظر الويب
+        // زر لصق ذكي ومضمون 100% لتجاوز حظر الويب للقصائد
         if (isPoet) ...[
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
@@ -166,13 +166,13 @@ class TalentWorkFormWidget extends StatelessWidget {
                 children: [
                   CircularProgressIndicator(color: Color(0xFF7B1FA2)),
                   SizedBox(height: 8),
-                  Text('جاري رفع الأغنية للسحابة، يرجى الانتظار قليلاً...', style: TextStyle(color: Colors.purple, fontSize: 13)),
+                  Text('جاري رفع الملف الصوتي والعمل للسحابة، يرجى الانتظار قليلاً...', style: TextStyle(color: Colors.purple, fontSize: 13)),
                 ],
               )
             : ElevatedButton(
                 style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF7B1FA2)),
                 onPressed: onAddNewWork,
-                child: const Text('حفظ ونشر العمل 🚀', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                child: const Text('حفظ ونشر العمل والإلقاء 🚀', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
               ),
         const SizedBox(height: 12),
       ],
