@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:audioplayers/audioplayers.dart' as ap;
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:convert';
 import 'dart:typed_data';
 
@@ -175,6 +176,61 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
       debugPrint("Error: $e");
       setState(() => _currentlyPlayingVoiceUrl = null);
     }
+  }
+
+  // دالة مساعدة لتحويل الروابط داخل الرسائل إلى روابط تفاعلية قابلة للنقر والفتح
+  List<InlineSpan> _buildMessageSpans(String text, bool isMe) {
+    final RegExp urlRegExp = RegExp(
+      r'((https?:\/\/)?([a-zA-Z0-9_-]+\.)+[a-zA-Z0-9_-]+(\/[^\s]*)?)',
+      caseSensitive: false,
+    );
+
+    final matches = urlRegExp.allMatches(text);
+    if (matches.isEmpty) {
+      return [TextSpan(text: text)];
+    }
+
+    List<InlineSpan> spans = [];
+    int start = 0;
+
+    for (final match in matches) {
+      if (match.start > start) {
+        spans.add(TextSpan(text: text.substring(start, match.start)));
+      }
+
+      final urlStr = match.group(0)!;
+      final displayUrl = urlStr.startsWith('http') ? urlStr : 'https://$urlStr';
+
+      spans.add(
+        WidgetSpan(
+          child: InkWell(
+            onTap: () async {
+              final uri = Uri.parse(displayUrl);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            child: Text(
+              urlStr,
+              style: TextStyle(
+                fontSize: 15,
+                color: isMe ? Colors.yellowAccent : Colors.blue,
+                decoration: TextDecoration.underline,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      start = match.end;
+    }
+
+    if (start < text.length) {
+      spans.add(TextSpan(text: text.substring(start)));
+    }
+
+    return spans;
   }
 
   @override
@@ -558,7 +614,12 @@ class _ChatRadioScreenState extends State<ChatRadioScreen> {
                                                           ),
                                                         ),
                                                       )
-                                                    : Text(textVal, style: TextStyle(fontSize: 15, color: isMe ? Colors.white : Colors.black87))),
+                                                    : SelectableText.rich(
+                                                        TextSpan(
+                                                          children: _buildMessageSpans(textVal, isMe),
+                                                        ),
+                                                        style: TextStyle(fontSize: 15, color: isMe ? Colors.white : Colors.black87),
+                                                      )),
                                           ],
                                         ),
                                       ),
